@@ -1,5 +1,5 @@
 
-# figma-ui-mcp — Layout Rules
+# figma-bridge-mcp — Layout Rules
 
 ---
 

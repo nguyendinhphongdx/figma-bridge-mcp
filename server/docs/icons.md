@@ -1,5 +1,5 @@
 
-# figma-ui-mcp — Images & Icons
+# figma-bridge-mcp — Images & Icons
 
 ---
 

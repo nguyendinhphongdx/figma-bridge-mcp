@@ -1,11 +1,11 @@
 {
-  "name": "figma-ui-mcp",
+  "name": "@hanoilab/figma-bridge-mcp",
   "version": "2.5.29",
   "description": "Claude Code to Figma — Bidirectional MCP bridge. AI draws UI on Figma canvas, reads designs back. Works with Claude, Cursor, VS Code, Windsurf, Antigravity. No API key needed.",
-  "mcpName": "io.github.TranHoaiHung/figma-ui-mcp",
+  "mcpName": "io.github.nguyendinhphongdx/figma-bridge-mcp",
   "type": "module",
   "bin": {
-    "figma-ui-mcp": "./server/cli.js"
+    "figma-bridge-mcp": "./server/cli.js"
   },
   "files": [
     "server/cli.js",
@@ -23,7 +23,8 @@
   "scripts": {
     "start": "node server/index.js",
     "build:plugin": "node scripts/build-plugin.js",
-    "dev": "node --watch scripts/build-plugin.js"
+    "dev": "node --watch scripts/build-plugin.js",
+    "test": "node scripts/run-tests.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4"
@@ -31,13 +32,13 @@
   "engines": { "node": ">=18" },
   "keywords": ["figma", "mcp", "model-context-protocol", "claude", "claude-code", "cursor", "windsurf", "vscode", "antigravity", "ai", "design", "plugin", "figma-plugin", "ui-generation", "figma-mcp", "ai-to-figma", "claude-to-figma", "code-to-figma", "design-to-code", "figma-bridge", "figma-automation"],
   "license": "MIT",
-  "author": "TranHoaiHung",
-  "homepage": "https://github.com/TranHoaiHung/figma-ui-mcp#readme",
+  "author": "nguyendinhphongdx",
+  "homepage": "https://github.com/nguyendinhphongdx/figma-bridge-mcp#readme",
   "bugs": {
-    "url": "https://github.com/TranHoaiHung/figma-ui-mcp/issues"
+    "url": "https://github.com/nguyendinhphongdx/figma-bridge-mcp/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TranHoaiHung/figma-ui-mcp"
+    "url": "https://github.com/nguyendinhphongdx/figma-bridge-mcp"
   }
 }

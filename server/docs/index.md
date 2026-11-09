@@ -1,5 +1,5 @@
 
-# figma-ui-mcp — API Reference
+# figma-bridge-mcp — API Reference
 
 Call `figma_docs` with a `section` param to load a specific part:
 

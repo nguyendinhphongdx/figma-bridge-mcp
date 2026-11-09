@@ -1,6 +1,6 @@
 // ─── PLUGIN ENTRY POINT ───────────────────────────────────────────────────────
 
-figma.showUI(__html__, { width: 320, height: 420, title: "Figma UI MCP Bridge" });
+figma.showUI(__html__, { width: 320, height: 420, title: "Bridge MCP for Figma" });
 
 // ─── DISPATCHER ───────────────────────────────────────────────────────────────
 

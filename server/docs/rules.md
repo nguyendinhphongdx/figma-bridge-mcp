@@ -1,5 +1,5 @@
 
-# figma-ui-mcp — Design Rules 10–20 + Component Reuse
+# figma-bridge-mcp — Design Rules 10–20 + Component Reuse
 
 ---
 

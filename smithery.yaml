@@ -1,14 +1,14 @@
-name: figma-ui-mcp
-display_name: Figma UI MCP
+name: figma-bridge-mcp
+display_name: Bridge MCP for Figma
 description: >
   Bidirectional Figma MCP bridge — AI draws UI on Figma canvas and reads
   designs back as structured data. Works with Claude, Cursor, VS Code,
   Windsurf, Antigravity. No API key needed.
 version: 2.4.0
-author: TranHoaiHung
+author: nguyendinhphongdx
 license: MIT
-repository: https://github.com/TranHoaiHung/figma-ui-mcp
-homepage: https://github.com/TranHoaiHung/figma-ui-mcp#readme
+repository: https://github.com/nguyendinhphongdx/figma-bridge-mcp
+homepage: https://github.com/nguyendinhphongdx/figma-bridge-mcp#readme
 categories:
   - design
   - figma
@@ -28,7 +28,7 @@ startCommand:
   command: npx
   args:
     - "-y"
-    - "figma-ui-mcp@latest"
+    - "@hanoilab/figma-bridge-mcp@latest"
 tools:
   - name: figma_status
     description: Check Figma plugin bridge connection status.

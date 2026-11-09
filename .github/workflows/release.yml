@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Run tests
+        run: npm test
+
       # ── Read local version ─────────────────────────────────────────────────
       - name: Get package version
         id: pkg
@@ -37,7 +40,7 @@ jobs:
       - name: Check npm registry
         id: check
         run: |
-          PUBLISHED=$(npm view figma-ui-mcp version 2>/dev/null || echo "0.0.0")
+          PUBLISHED=$(npm view @hanoilab/figma-bridge-mcp version 2>/dev/null || echo "0.0.0")
           echo "published=$PUBLISHED" >> $GITHUB_OUTPUT
           if [ "$PUBLISHED" = "${{ steps.pkg.outputs.version }}" ]; then
             echo "skip=true"  >> $GITHUB_OUTPUT
@@ -123,7 +126,7 @@ jobs:
           # and npm's read path needs a moment to see a just-published version.
           # v2.5.28 failed here with a 404 on a version npm already had.
           for i in $(seq 1 12); do
-            if npm view "figma-ui-mcp@$VERSION" version >/dev/null 2>&1; then
+            if npm view "@hanoilab/figma-bridge-mcp@$VERSION" version >/dev/null 2>&1; then
               echo "npm is serving $VERSION"
               break
             fi

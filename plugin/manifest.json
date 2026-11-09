@@ -1,6 +1,6 @@
 {
-  "name": "Figma UI MCP Bridge",
-  "id": "1614927480683426278",
+  "name": "Bridge MCP for Figma",
+  "id": "figma-bridge-mcp",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",

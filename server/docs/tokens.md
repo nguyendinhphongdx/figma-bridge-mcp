@@ -1,5 +1,5 @@
 
-# figma-ui-mcp — Design Tokens & Variables
+# figma-bridge-mcp — Design Tokens & Variables
 
 ---
 

@@ -1,15 +1,15 @@
-# figma-ui-mcp
+# figma-bridge-mcp
 
 <p align="center">
-  <img src="assets/logo-v6.png" alt="figma-ui-mcp — Claude Code to Figma, AI to Figma, MCP Figma Bridge" width="480" />
+  <img src="assets/logo-v6.png" alt="figma-bridge-mcp — Claude Code to Figma, AI to Figma, MCP Figma Bridge" width="480" />
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/figma-ui-mcp"><img src="https://img.shields.io/npm/v/figma-ui-mcp?color=blue" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/figma-bridge-mcp"><img src="https://img.shields.io/npm/v/@hanoilab/figma-bridge-mcp?color=blue" alt="npm version" /></a>
   <a href="https://registry.modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP-Registry-purple" alt="MCP Registry" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
-  <a href="https://github.com/TranHoaiHung/figma-ui-mcp/stargazers"><img src="https://img.shields.io/github/stars/TranHoaiHung/figma-ui-mcp?style=social" alt="GitHub stars" /></a>
-  <a href="https://mcpvault.io/servers/figma-ui-mcp/health?utm_source=external_badge&utm_medium=referral&utm_campaign=mcp_health_report"><img src="https://mcpvault.io/badge/figma-ui-mcp.svg" alt="MCPVault: claimed" /></a>
+  <a href="https://github.com/nguyendinhphongdx/figma-bridge-mcp/stargazers"><img src="https://img.shields.io/github/stars/nguyendinhphongdx/figma-bridge-mcp?style=social" alt="GitHub stars" /></a>
+  <a href="https://mcpvault.io/servers/figma-bridge-mcp/health?utm_source=external_badge&utm_medium=referral&utm_campaign=mcp_health_report"><img src="https://mcpvault.io/badge/figma-bridge-mcp.svg" alt="MCPVault: claimed" /></a>
 </p>
 
 <p align="center">
@@ -21,6 +21,8 @@
 </p>
 
 **Bidirectional Figma MCP bridge** — let AI assistants (Claude Code, Cursor, Windsurf, Antigravity, VS Code Copilot, or any MCP-compatible IDE) **draw UI directly on Figma canvas** and **read existing designs back** as structured data, screenshots, or code-ready tokens. No Figma API key needed — works entirely over localhost.
+
+> **Not affiliated with, endorsed by, or sponsored by Figma, Inc.** "Figma" is a trademark of Figma, Inc., used here only to describe compatibility.
 
 > **Requires Figma Desktop** — the plugin communicates with the MCP server over `localhost` HTTP polling. Figma's web app does not allow localhost network access, so **Figma Desktop is required**.
 
@@ -93,10 +95,10 @@ Choose your platform:
 
 ```bash
 # Project scope (default)
-claude mcp add figma-ui-mcp -- npx figma-ui-mcp
+claude mcp add figma-bridge-mcp -- npx @hanoilab/figma-bridge-mcp
 
 # Global scope (all projects)
-claude mcp add --scope user figma-ui-mcp -- npx figma-ui-mcp
+claude mcp add --scope user figma-bridge-mcp -- npx @hanoilab/figma-bridge-mcp
 ```
 </details>
 
@@ -112,7 +114,7 @@ Edit config file:
   "mcpServers": {
     "figma": {
       "command": "npx",
-      "args": ["-y", "figma-ui-mcp"]
+      "args": ["-y", "@hanoilab/figma-bridge-mcp"]
     }
   }
 }
@@ -129,7 +131,7 @@ Edit `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global):
   "mcpServers": {
     "figma": {
       "command": "npx",
-      "args": ["-y", "figma-ui-mcp"]
+      "args": ["-y", "@hanoilab/figma-bridge-mcp"]
     }
   }
 }
@@ -147,7 +149,7 @@ Edit `.vscode/mcp.json` (project) or add to `settings.json` (global):
     "servers": {
       "figma": {
         "command": "npx",
-        "args": ["-y", "figma-ui-mcp"]
+        "args": ["-y", "@hanoilab/figma-bridge-mcp"]
       }
     }
   }
@@ -165,7 +167,7 @@ Edit `~/.codeium/windsurf/mcp_config.json`:
   "mcpServers": {
     "figma": {
       "command": "npx",
-      "args": ["-y", "figma-ui-mcp"]
+      "args": ["-y", "@hanoilab/figma-bridge-mcp"]
     }
   }
 }
@@ -184,7 +186,7 @@ Edit `~/.codeium/windsurf/mcp_config.json`:
   "mcpServers": {
     "figma": {
       "command": "npx",
-      "args": ["-y", "figma-ui-mcp"]
+      "args": ["-y", "@hanoilab/figma-bridge-mcp"]
     }
   }
 }
@@ -195,10 +197,10 @@ Edit `~/.codeium/windsurf/mcp_config.json`:
 <summary><strong>From source (any client)</strong></summary>
 
 ```bash
-git clone https://github.com/TranHoaiHung/figma-ui-mcp
-cd figma-ui-mcp
+git clone https://github.com/nguyendinhphongdx/figma-bridge-mcp
+cd figma-bridge-mcp
 npm install
-# Then point your MCP client to: node /path/to/figma-ui-mcp/server/index.js
+# Then point your MCP client to: node /path/to/figma-bridge-mcp/server/index.js
 ```
 </details>
 
@@ -206,13 +208,13 @@ npm install
 
 ### Step 2 — Install the Figma plugin
 
-**[⬇ Download plugin.zip](https://github.com/TranHoaiHung/figma-ui-mcp/raw/main/plugin.zip)** — no git clone needed
+**[⬇ Download plugin.zip](https://github.com/nguyendinhphongdx/figma-bridge-mcp/raw/main/plugin.zip)** — no git clone needed
 
 1. Download and **unzip** `plugin.zip` anywhere on your machine
 2. Open **Figma Desktop** (required — web app cannot access localhost)
 3. Go to **Plugins → Development → Import plugin from manifest...**
 4. Select `manifest.json` from the unzipped folder
-5. Run **Plugins → Development → Figma UI MCP Bridge**
+5. Run **Plugins → Development → Bridge MCP for Figma**
 
 The plugin UI shows a **green dot** when the MCP server is connected.
 
@@ -220,14 +222,14 @@ The plugin UI shows a **green dot** when the MCP server is connected.
 
 ```bash
 # Step 1 — get the new version + plugin path
-npx figma-ui-mcp@latest --version
-# figma-ui-mcp v2.5.12  —  plugin: /.../.npm/_npx/.../figma-ui-mcp/plugin
+npx @hanoilab/figma-bridge-mcp@latest --version
+# figma-bridge-mcp v2.5.12  —  plugin: /.../.npm/_npx/.../figma-bridge-mcp/plugin
 
 # Step 2 — restart Claude / your IDE so the MCP server reloads
 
 # Step 3 — re-link the Figma plugin (manual, one-time per update)
 #   Figma Desktop → Plugins → Development → Manage plugins in development
-#   Remove old "Figma UI MCP Bridge" → "+" → Import plugin from manifest...
+#   Remove old "Bridge MCP for Figma" → "+" → Import plugin from manifest...
 #   Select manifest.json from the plugin path printed in Step 1
 
 # Step 4 — verify
@@ -242,7 +244,7 @@ npx figma-ui-mcp@latest --version
 Tell your AI assistant to connect:
 
 ```
-"Connect to figma-ui-mcp"
+"Connect to figma-bridge-mcp"
 ```
 
 The AI will call `figma_status` and confirm:
@@ -258,7 +260,7 @@ The AI will call `figma_status` and confirm:
 Once connected, just describe what you want in natural language:
 
 ```
-"Use figma-ui-mcp to draw a login screen for mobile"
+"Use figma-bridge-mcp to draw a login screen for mobile"
 ```
 
 The AI will automatically:
@@ -289,7 +291,7 @@ The AI will automatically:
 ### Workflow summary
 
 ```
-You: "Connect to figma-ui-mcp"
+You: "Connect to figma-bridge-mcp"
 AI:  ✅ Connected to Figma
 
 You: "Draw a mobile onboarding screen with 3 steps"
@@ -368,7 +370,7 @@ Returns a base64 PNG Claude can analyze and describe.
 ## Architecture
 
 ```
-figma-ui-mcp/
+figma-bridge-mcp/
 ├── server/
 │   ├── index.js            MCP server (stdio transport)
 │   ├── bridge-server.js    HTTP bridge on localhost:38451 (long-poll, multi-session)
@@ -634,11 +636,11 @@ await figma.setFrameVariableMode({ nodeId: dark.id,  collectionId: collection.id
 
 ## Star History
 
-If **figma-ui-mcp** helps you, please give it a star — it helps others discover the project!
+If **figma-bridge-mcp** helps you, please give it a star — it helps others discover the project!
 
-[![GitHub stars](https://img.shields.io/github/stars/TranHoaiHung/figma-ui-mcp?style=social)](https://github.com/TranHoaiHung/figma-ui-mcp/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/nguyendinhphongdx/figma-bridge-mcp?style=social)](https://github.com/nguyendinhphongdx/figma-bridge-mcp/stargazers)
 
-[![Star History Chart](https://api.star-history.com/svg?repos=TranHoaiHung/figma-ui-mcp&type=Date)](https://star-history.com/#TranHoaiHung/figma-ui-mcp&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=nguyendinhphongdx/figma-bridge-mcp&type=Date)](https://star-history.com/#nguyendinhphongdx/figma-bridge-mcp&Date)
 
 ---
 
@@ -646,10 +648,10 @@ If **figma-ui-mcp** helps you, please give it a star — it helps others discove
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-MIT © [TranHoaiHung](https://github.com/TranHoaiHung) — free to use, modify, and distribute. See [LICENSE](LICENSE) for details.
+MIT © [nguyendinhphongdx](https://github.com/nguyendinhphongdx), forked from [TranHoaiHung/figma-ui-mcp](https://github.com/TranHoaiHung/figma-ui-mcp) — free to use, modify, and distribute. See [LICENSE](LICENSE) for details.
 
 ---
 
 ## Keywords
 
-figma mcp, claude code to figma, cursor to figma, ai to figma, figma ai plugin, figma mcp bridge, figma mcp server, figma design to code, code to figma design, ai ui design, figma automation, figma plugin ai, model context protocol figma, claude figma, windsurf figma, vs code figma, antigravity figma, ai design tool, figma api alternative, figma localhost plugin, draw ui with ai, ai generate figma design, figma design system ai, mcp server figma, figma read design, figma write design, bidirectional figma, figma desktop plugin, npx figma-ui-mcp
+figma mcp, claude code to figma, cursor to figma, ai to figma, figma ai plugin, figma mcp bridge, figma mcp server, figma design to code, code to figma design, ai ui design, figma automation, figma plugin ai, model context protocol figma, claude figma, windsurf figma, vs code figma, antigravity figma, ai design tool, figma api alternative, figma localhost plugin, draw ui with ai, ai generate figma design, figma design system ai, mcp server figma, figma read design, figma write design, bidirectional figma, figma desktop plugin, npx @hanoilab/figma-bridge-mcp

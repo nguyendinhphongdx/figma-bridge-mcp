@@ -1,6 +1,7 @@
 // HTTP bridge — plugin polls this server for queued operations
 // Supports long polling, multi-instance sessions, and connection resilience
 import http from "node:http";
+import { randomUUID } from "node:crypto";
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -89,7 +90,11 @@ export class BridgeServer {
   #getSession(id) {
     var sid = id || BridgeServer.DEFAULT_SESSION;
     var s = this.#sessions.get(sid);
-    if (!s) { s = new Session(sid); this.#sessions.set(sid, s); }
+    if (!s) {
+      this.#cleanupSessions();   // expired sessions otherwise only go away on /health
+      s = new Session(sid);
+      this.#sessions.set(sid, s);
+    }
     return s;
   }
 
@@ -99,6 +104,9 @@ export class BridgeServer {
     if (sessionId) {
       var s = this.#sessions.get(sessionId);
       if (s && s.isConnected()) return s;
+      // A pinned session that is not connected must fail loudly. Falling through
+      // to "any connected session" would silently write into a different Figma file.
+      throw new Error("Session \"" + sessionId + "\" is not connected. Open the plugin in that file, or omit sessionId to use the active one.");
     }
     // Prefer session with active long-poll waiter (ready to receive work NOW)
     var bestLongPoll = null;
@@ -156,7 +164,7 @@ export class BridgeServer {
     }
 
     var timeout = OP_TIMEOUTS[operation] || CONFIG.OP_TIMEOUT_MS;
-    var opId = Date.now() + "-" + Math.random().toString(36).slice(2, 7);
+    var opId = Date.now() + "-" + randomUUID();
 
     // CRITICAL: set pending BEFORE queue+flush, so respondPoll filter sees the opId
     var self = this;
@@ -240,13 +248,13 @@ export class BridgeServer {
 
   #readJson(req) {
     return new Promise(function(resolve, reject) {
-      var raw = "", size = 0;
+      var chunks = [], size = 0;
       req.on("data", function(chunk) {
         size += chunk.length;
         if (size > CONFIG.MAX_BODY_BYTES) { req.destroy(); return reject(new Error("Body too large")); }
-        raw += chunk;
+        chunks.push(chunk);   // decode once at the end: a multibyte char can span chunks
       });
-      req.on("end", function() { try { resolve(JSON.parse(raw)); } catch(e) { reject(new Error("Invalid JSON")); } });
+      req.on("end", function() { try { resolve(JSON.parse(Buffer.concat(chunks).toString("utf8"))); } catch(e) { reject(new Error("Invalid JSON")); } });
       req.on("error", reject);
     });
   }
@@ -259,8 +267,29 @@ export class BridgeServer {
     res.setHeader("X-Content-Type-Options",       "nosniff");
   }
 
+  // The bridge has no auth, so the network layer is the only gate. Browsers
+  // always attach Origin to cross-site requests: a web page the user has open
+  // arrives with a real origin, while the Figma plugin iframe sends "null" and
+  // the MCP client (node http) sends none. Rejecting real origins stops a
+  // malicious page from driving /exec, and checking Host stops DNS rebinding.
+  #isAllowedRequest(req) {
+    var origin = req.headers.origin;
+    if (origin !== undefined && origin !== "null") return false;
+    var host = (req.headers.host || "").replace(/:\d+$/, "").toLowerCase();
+    if (host !== "127.0.0.1" && host !== "localhost" && host !== "[::1]") {
+      // Only enforced while bound to loopback; an explicit FIGMA_MCP_HOST override opts out.
+      if (CONFIG.HOST === "127.0.0.1" || CONFIG.HOST === "localhost") return false;
+    }
+    return true;
+  }
+
   #route(req, res) {
     this.#headers(res);
+    if (!this.#isAllowedRequest(req)) {
+      res.writeHead(403);
+      res.end(JSON.stringify({ error: "Forbidden origin" }));
+      return;
+    }
     if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
 
     var url = new URL(req.url, "http://localhost:" + CONFIG.PORT);
@@ -273,7 +302,7 @@ export class BridgeServer {
     if (path === "/" && req.method === "GET") {
       res.writeHead(200);
       res.end(JSON.stringify({
-        server: "figma-ui-mcp", version: VERSION, port: this.#actualPort,
+        server: "figma-bridge-mcp", version: VERSION, port: this.#actualPort,
         pluginConnected: this.isPluginConnected(),
         sessions: this.getSessions(),
         queueLength: this.queueLength,
@@ -374,7 +403,7 @@ export class BridgeServer {
     }
 
     // Clear queue
-    if (path === "/clear" && (req.method === "POST" || req.method === "GET")) {
+    if (path === "/clear" && req.method === "POST") {   // GET removed: an <img> tag could trigger it
       var cleared = this.clearQueue(sessionId);
       res.writeHead(200);
       res.end(JSON.stringify({ cleared: cleared, queueLength: 0, pendingCount: 0 }));
@@ -396,7 +425,7 @@ export class BridgeServer {
           res.on("data", function(c) { data += c; });
           res.on("end", function() {
             try { var j = JSON.parse(data); resolve(j.pluginConnected === undefined); }
-            catch(e) { resolve(true); }
+            catch(e) { resolve(false); }   // not JSON => not our bridge; never kill it
           });
         });
         req.on("error", function() { resolve(false); });
@@ -412,7 +441,7 @@ export class BridgeServer {
           for (var i = 0; i < pids.length; i++) {
             try { m.execSync("kill -9 " + pids[i] + " 2>/dev/null"); } catch(e) {}
           }
-          process.stderr.write("[figma-ui-mcp] Killed " + pids.length + " zombie(s) on port " + port + ": " + pids.join(",") + "\n");
+          process.stderr.write("[figma-bridge-mcp] Killed " + pids.length + " zombie(s) on port " + port + ": " + pids.join(",") + "\n");
           await new Promise(function(r) { setTimeout(r, 300); });
         }
       } catch(e) { /* ignore */ }
@@ -426,17 +455,17 @@ export class BridgeServer {
 
       var tryPort = function(port, attempt) {
         if (attempt >= CONFIG.PORT_RANGE) {
-          process.stderr.write("[figma-ui-mcp] All ports " + CONFIG.PORT + "-" + (CONFIG.PORT + CONFIG.PORT_RANGE - 1) + " in use.\n");
+          process.stderr.write("[figma-bridge-mcp] All ports " + CONFIG.PORT + "-" + (CONFIG.PORT + CONFIG.PORT_RANGE - 1) + " in use.\n");
           resolve(self);
           return;
         }
         self.#server = http.createServer(function(req, res) { self.#route(req, res); });
         self.#server.once("error", function(err) {
           if (err.code === "EADDRINUSE") {
-            process.stderr.write("[figma-ui-mcp] Port " + port + " in use — trying " + (port + 1) + "...\n");
+            process.stderr.write("[figma-bridge-mcp] Port " + port + " in use — trying " + (port + 1) + "...\n");
             tryPort(port + 1, attempt + 1);
           } else {
-            process.stderr.write("[figma-ui-mcp bridge] " + err.message + "\n");
+            process.stderr.write("[figma-bridge-mcp bridge] " + err.message + "\n");
             resolve(self);
           }
         });

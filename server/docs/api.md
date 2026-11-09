@@ -1,5 +1,5 @@
 
-# figma-ui-mcp — API Reference (Create / Modify / Read / Ops)
+# figma-bridge-mcp — API Reference (Create / Modify / Read / Ops)
 
 ---
 

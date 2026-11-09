@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Full regression test suite for figma-ui-mcp
+ * Full regression test suite for figma-bridge-mcp
  * Covers: all handlers, edge cases, new features in v2.5.x
  * No live Figma connection needed — uses mock bridge.
  */

@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Figma UI MCP Bridge</title>
+  <title>Bridge MCP for Figma</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -132,7 +132,7 @@
       </svg>
     </div>
     <div>
-      <h1>Figma UI MCP Bridge</h1>
+      <h1>Bridge MCP for Figma</h1>
       <p>AI-powered design bridge · port <span id="port-display" onclick="changePort()" style="cursor:pointer;text-decoration:underline dotted;color:#7c5bf5" title="Click to change port">38451</span></p>
     </div>
   </header>
@@ -263,7 +263,7 @@
           } else if (consecutiveErrors <= 10) {
             setStatus("yellow", "Still waiting — first run may take 15s to download");
           } else {
-            setStatus("red", "Cannot connect — run: npx figma-ui-mcp");
+            setStatus("red", "Cannot connect — run: npx @hanoilab/figma-bridge-mcp");
           }
           if (consecutiveErrors === 1) log("Connecting to bridge — if first run, npx is downloading...", "info");
           await sleep(backoff);

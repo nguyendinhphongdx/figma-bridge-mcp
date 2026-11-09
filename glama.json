@@ -1,13 +1,13 @@
 {
   "$schema": "https://glama.ai/mcp/schemas/server.json",
-  "name": "figma-ui-mcp",
-  "display_name": "Figma UI MCP",
+  "name": "figma-bridge-mcp",
+  "display_name": "Bridge MCP for Figma",
   "description": "Bidirectional Figma MCP bridge — AI draws UI on Figma canvas and reads designs back. No API key needed.",
   "version": "2.4.0",
-  "repository": "https://github.com/TranHoaiHung/figma-ui-mcp",
-  "homepage": "https://github.com/TranHoaiHung/figma-ui-mcp#readme",
+  "repository": "https://github.com/nguyendinhphongdx/figma-bridge-mcp",
+  "homepage": "https://github.com/nguyendinhphongdx/figma-bridge-mcp#readme",
   "license": "MIT",
-  "author": "TranHoaiHung",
+  "author": "nguyendinhphongdx",
   "categories": ["design", "figma", "ui-generation"],
   "features": {
     "tools": true,
@@ -97,12 +97,12 @@
     }
   ],
   "installation": {
-    "npm": "npx figma-ui-mcp@latest",
+    "npm": "npx @hanoilab/figma-bridge-mcp@latest",
     "config": {
       "mcpServers": {
-        "figma-ui-mcp": {
+        "figma-bridge-mcp": {
           "command": "npx",
-          "args": ["-y", "figma-ui-mcp@latest"]
+          "args": ["-y", "@hanoilab/figma-bridge-mcp@latest"]
         }
       }
     }

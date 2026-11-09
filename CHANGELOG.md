@@ -1,5 +1,17 @@
 # Changelog
 
+
+## Unreleased — fork rebrand and security hardening
+
+- **Rebrand**: renamed to `figma-bridge-mcp` (npm: `@hanoilab/figma-bridge-mcp`, plugin: "Bridge MCP for Figma"). Forked from TranHoaiHung/figma-ui-mcp (MIT).
+- **Security — sandbox**: `figma_write` code could escape `node:vm` through `Object.constructor(...)` or `figma.notify.constructor(...)` and run arbitrary code on the host. The context now gets its own builtins and a string-only bridge, so no host-realm object or error reaches user code.
+- **Security — bridge**: rejects requests carrying a real web `Origin` (CORS `*` let any open web page drive `/exec`) and non-loopback `Host` headers (DNS rebinding). `/clear` is POST-only.
+- **Security — SSRF**: `loadImage`/`loadIcon` only fetch public http(s) URLs, re-checked on every redirect. `FIGMA_MCP_ALLOW_PRIVATE_FETCH=1` opts out.
+- **Fix**: a pinned `sessionId` that is not connected now errors instead of silently writing to a different Figma file.
+- **Fix**: a non-JSON service on the bridge port is no longer treated as a zombie and `kill -9`-ed.
+- **Fix**: request bodies are decoded once (multibyte characters could be corrupted across chunks); op ids use `crypto.randomUUID()`; expired sessions are pruned on creation.
+- **Tooling**: `npm test` runs every `scripts/test-*.mjs`; the release workflow runs it before publishing.
+
 ## [2.5.29] — 2026-10-11
 
 ### Fixed

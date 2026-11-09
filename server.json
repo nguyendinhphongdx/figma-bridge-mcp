@@ -1,16 +1,16 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.TranHoaiHung/figma-ui-mcp",
+  "name": "io.github.nguyendinhphongdx/figma-bridge-mcp",
   "description": "Bidirectional Figma MCP — AI draws UI on Figma canvas, reads designs back",
   "repository": {
-    "url": "https://github.com/TranHoaiHung/figma-ui-mcp",
+    "url": "https://github.com/nguyendinhphongdx/figma-bridge-mcp",
     "source": "github"
   },
   "version": "2.5.24",
   "packages": [
     {
       "registryType": "npm",
-      "identifier": "figma-ui-mcp",
+      "identifier": "@hanoilab/figma-bridge-mcp",
       "version": "2.5.24",
       "transport": {
         "type": "stdio"

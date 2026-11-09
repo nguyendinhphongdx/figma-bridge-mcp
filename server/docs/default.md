@@ -1,5 +1,5 @@
 
-# figma-ui-mcp — Quick-Start & Critical Rules
+# figma-bridge-mcp — Quick-Start & Critical Rules
 
 ---
 

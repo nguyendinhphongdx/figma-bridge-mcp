@@ -10,6 +10,8 @@
 - **Fix**: a pinned `sessionId` that is not connected now errors instead of silently writing to a different Figma file.
 - **Fix**: a non-JSON service on the bridge port is no longer treated as a zombie and `kill -9`-ed.
 - **Fix**: request bodies are decoded once (multibyte characters could be corrupted across chunks); op ids use `crypto.randomUUID()`; expired sessions are pruned on creation.
+- **Packaging**: the plugin zip is no longer checked into git (the committed copy had gone stale: it shipped a `code.js` from April). The release workflow now builds `figma-bridge-mcp-plugin.zip` from `plugin/` and attaches it to the GitHub Release; the README links to `releases/latest/download/`.
+- **Branding**: new logo, wordmark and plugin icons.
 - **Tooling**: `npm test` runs every `scripts/test-*.mjs`; the release workflow runs it before publishing.
 
 ## [2.5.29] — 2026-10-11

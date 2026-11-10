@@ -208,9 +208,9 @@ npm install
 
 ### Step 2 — Install the Figma plugin
 
-**[⬇ Download plugin.zip](https://github.com/nguyendinhphongdx/figma-bridge-mcp/raw/main/plugin.zip)** — no git clone needed
+**[⬇ Download the plugin](https://github.com/nguyendinhphongdx/figma-bridge-mcp/releases/latest/download/figma-bridge-mcp-plugin.zip)** — no git clone needed
 
-1. Download and **unzip** `plugin.zip` anywhere on your machine
+1. Download and **unzip** `figma-bridge-mcp-plugin.zip` anywhere on your machine
 2. Open **Figma Desktop** (required — web app cannot access localhost)
 3. Go to **Plugins → Development → Import plugin from manifest...**
 4. Select `manifest.json` from the unzipped folder

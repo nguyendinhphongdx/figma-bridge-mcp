@@ -88,10 +88,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="v${{ steps.pkg.outputs.version }}"
+          # Built from the committed plugin/ files, so the zip can never lag behind the
+          # release (a checked-in plugin.zip silently went stale). The versionless name
+          # keeps https://github.com/<repo>/releases/latest/download/<name> stable.
+          ASSET="figma-bridge-mcp-plugin.zip"
+          (cd plugin && zip -q -j "../$ASSET" code.js ui.html manifest.json icon16.png icon32.png)
+          unzip -l "$ASSET"
           if gh release view "$VERSION" >/dev/null 2>&1; then
-            echo "Release $VERSION already exists — skipping."
+            echo "Release $VERSION already exists — refreshing the plugin asset."
+            gh release upload "$VERSION" "$ASSET" --clobber
           else
-            gh release create "$VERSION" \
+            gh release create "$VERSION" "$ASSET" \
               --title "$VERSION" \
               --notes-file /tmp/release-notes.md \
               --latest

@@ -2,7 +2,7 @@
 
 
 
-## Unreleased
+## [2.6.1] — 2026-11-10
 
 - **Plugin settings panel**: gear button in the plugin window opens Settings: bridge port (dropdown, 47451-47460), find the bridge automatically when it stops answering, reconnect on returning to Figma, and an activity-log level. Saved per user with `figma.clientStorage`. Replaces the port prompt, which relied on `prompt()`/`alert()` (unsupported in Figma plugin iframes).
 - **Bridge**: new status page at `/ui`; ports moved to 47451-47460; `figma_status` reports `bridgeListening`/`bridgeError` instead of claiming a port it could not bind; also listens on `::1` so the plugin's `localhost` connects on Windows.

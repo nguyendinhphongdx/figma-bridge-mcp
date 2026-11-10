@@ -6,12 +6,12 @@
     "url": "https://github.com/nguyendinhphongdx/figma-bridge-mcp",
     "source": "github"
   },
-  "version": "2.6.0",
+  "version": "2.6.1",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@hanoilab/figma-bridge-mcp",
-      "version": "2.6.0",
+      "version": "2.6.1",
       "transport": {
         "type": "stdio"
       }

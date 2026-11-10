@@ -16,7 +16,7 @@ const VERSION = JSON.parse(
 ).version;
 
 export const CONFIG = {
-  PORT: parseInt(process.env.FIGMA_MCP_PORT || "38451", 10),
+  PORT: parseInt(process.env.FIGMA_MCP_PORT || "47451", 10),
   PORT_RANGE: 10,
   // Loopback only. The bridge has no authentication and /exec drives the user's
   // Figma document, so binding every interface would let any host on the LAN —
@@ -482,7 +482,7 @@ export class BridgeServer {
           // Do not pretend to be running: record why, so figma_status and the log say so.
           self.#listening = false;
           self.#bindError = "could not bind any port in " + CONFIG.PORT + "-" + (CONFIG.PORT + CONFIG.PORT_RANGE - 1) + " on " + CONFIG.HOST + " (last error: " + (self.#lastCode || "EADDRINUSE") + ")";
-          process.stderr.write("[figma-bridge-mcp] ERROR: " + self.#bindError + ". The Figma plugin cannot connect. Check what holds the port: netstat -ano | findstr :" + CONFIG.PORT + "  and  netsh interface ipv4 show excludedportrange protocol=tcp\n");
+          process.stderr.write("[figma-bridge-mcp] ERROR: " + self.#bindError + ". The Figma plugin cannot connect. Check what holds the port: netstat -ano | findstr :" + CONFIG.PORT + "  and  netsh interface ipv4 show excludedportrange protocol=tcp\n[figma-bridge-mcp] If a leftover process of yours holds the port, free it with: npx -y kill-port " + CONFIG.PORT + "  (check the owner first: it kills whatever holds the port)\n");
           resolve(self);
           return;
         }

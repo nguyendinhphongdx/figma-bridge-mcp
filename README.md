@@ -48,7 +48,7 @@ flowchart LR
   subgraph Server["figma-bridge-mcp  (Node)"]
     B["MCP server<br/>5 tools · stdio"]
     C["Code sandbox<br/>runs figma_write code"]
-    D["HTTP bridge<br/>127.0.0.1:38451"]
+    D["HTTP bridge<br/>127.0.0.1:47451"]
   end
   subgraph Figma["Figma Desktop"]
     E["Plugin UI<br/>long-poll client"]
@@ -73,7 +73,7 @@ sequenceDiagram
   autonumber
   participant AI as AI client
   participant S as MCP server
-  participant B as Bridge :38451
+  participant B as Bridge :47451
   participant P as Figma plugin
   AI->>S: figma_write { code }
   S->>S: run code in sandbox
@@ -356,7 +356,7 @@ Found a vulnerability? See [SECURITY.md](SECURITY.md).
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `FIGMA_MCP_PORT` | `38451` | Bridge port. If taken, the next 9 ports are tried. |
+| `FIGMA_MCP_PORT` | `47451` | Bridge port. If taken, the next 9 ports are tried. |
 | `FIGMA_MCP_HOST` | `127.0.0.1` | Bind address. Changing it exposes an unauthenticated bridge — avoid. |
 | `FIGMA_MCP_LONG_POLL_MS` | `8000` | How long an idle poll is held open. |
 | `FIGMA_MCP_ALLOW_PRIVATE_FETCH` | unset | Set to `1` to let `loadImage` reach private/loopback hosts (e.g. a local asset server). |
@@ -369,7 +369,8 @@ Found a vulnerability? See [SECURITY.md](SECURITY.md).
 |---|---|
 | `Plugin not connected` | Run the plugin in **Figma Desktop** (*Plugins → Development → Bridge MCP for Figma*). The web app cannot reach `localhost`. |
 | Tools missing in the AI client | Restart the client fully after editing its MCP config. |
-| Green dot never appears | Check nothing else holds port `38451`, or set `FIGMA_MCP_PORT` and re-import the plugin. |
+| Green dot never appears | Check nothing else holds port `47451`, or set `FIGMA_MCP_PORT` and re-import the plugin. |
+| Every port in `47451–47460` is "in use" | Find the owner with `netstat -ano \| findstr :47451`. If it is a leftover process of yours, free the port with `npx -y kill-port 47451` (it kills whatever holds the port, so check first), or choose another with `FIGMA_MCP_PORT`. |
 | Plugin and server versions differ | Re-import `manifest.json` after upgrading; the plugin does not auto-update. |
 | `Session "…" is not connected` | The targeted Figma file is closed or its plugin stopped. Open it, or omit `sessionId` to use the active file. |
 | `variable is not defined` in `figma_write` | Each call is isolated. Re-query node IDs at the start of every call. |

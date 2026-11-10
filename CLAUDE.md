@@ -17,7 +17,7 @@ TranHoaiHung/figma-ui-mcp (MIT: keep the original copyright line in LICENSE).
 ## Commands
 - `npm run build:plugin` — regenerate `plugin/code.js` (a hook does this when you edit `src/plugin/`).
 - `npm test` — runs every `scripts/test-*.mjs` in its own process. No live Figma needed (mock bridge).
-- Tests bind fixed local ports (38490+, 47311). If a port is "in use" on your machine, set
+- Tests bind fixed local ports (47470+, 47311). If a port is "in use" on your machine, set
   `FIGMA_MCP_PORT` to a free one for that test.
 
 ## Rules that are easy to get wrong

@@ -4,10 +4,10 @@
 import http from "node:http";
 
 // Pick a port away from the default before importing the bridge, whose CONFIG
-// reads FIGMA_MCP_PORT at module load. Otherwise the test binds 38451, which a
+// reads FIGMA_MCP_PORT at module load. Otherwise the test binds 47451, which a
 // real MCP server is usually already holding, and every assertion fails against
 // somebody else's bridge.
-if (!process.env.FIGMA_MCP_PORT) process.env.FIGMA_MCP_PORT = "38490";
+if (!process.env.FIGMA_MCP_PORT) process.env.FIGMA_MCP_PORT = "47470";
 // Several sections deliberately park a poll and never answer it. At the 8s
 // production hold that cost the suite ~40s of pure waiting.
 if (!process.env.FIGMA_MCP_LONG_POLL_MS) process.env.FIGMA_MCP_LONG_POLL_MS = "150";

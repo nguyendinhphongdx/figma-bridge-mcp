@@ -133,7 +133,7 @@
     </div>
     <div>
       <h1>Bridge MCP for Figma</h1>
-      <p>AI-powered design bridge · port <span id="port-display" onclick="changePort()" style="cursor:pointer;text-decoration:underline dotted;color:#7c5bf5" title="Click to change port">38451</span></p>
+      <p>AI-powered design bridge · port <span id="port-display" onclick="changePort()" style="cursor:pointer;text-decoration:underline dotted;color:#7c5bf5" title="Click to change port">47451</span></p>
     </div>
   </header>
 
@@ -161,7 +161,7 @@
   </div>
 
   <script>
-    var currentPort = 38451;
+    var currentPort = 47451;
     var BRIDGE  = "http://localhost:" + currentPort;
     var POLL_MS = 300;
     var POLL_MAX_MS = 3000;         // lower cap — recover faster
@@ -302,7 +302,7 @@
     });
 
     function changePort() {
-      var input = prompt("Enter bridge port (default 38451):", currentPort);
+      var input = prompt("Enter bridge port (default 47451):", currentPort);
       if (!input) return;
       var newPort = parseInt(input, 10);
       if (isNaN(newPort) || newPort < 1024 || newPort > 65535) { alert("Invalid port"); return; }
@@ -319,8 +319,8 @@
 
     async function autoDetectPort() {
       setStatus("yellow", "Scanning ports...");
-      log("Scanning 38451-38460...", "info");
-      for (var p = 38451; p <= 38460; p++) {
+      log("Scanning 47451-47460...", "info");
+      for (var p = 47451; p <= 47460; p++) {
         try {
           var res = await fetch("http://localhost:" + p + "/health", { signal: AbortSignal.timeout(500) });
           if (res.ok) {
@@ -333,8 +333,8 @@
           }
         } catch(e) { /* port not responding */ }
       }
-      log("No bridge found on 38451-38460. Reset to 38451.", "err");
-      setPort(38451);
+      log("No bridge found on 47451-47460. Reset to 47451.", "err");
+      setPort(47451);
     }
 
     window.onmessage = async function(event) {

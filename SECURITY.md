@@ -31,7 +31,7 @@ Reporters are credited in the advisory unless they ask otherwise.
 
 ## Scope
 
-`figma-bridge-mcp` runs an HTTP bridge bound to `localhost:38451` and executes `figma_write` JavaScript inside a VM sandbox. The bridge accepts only requests with no `Origin` or `Origin: null` and a loopback `Host`, so web pages and DNS rebinding cannot reach it. The sandbox is `node:vm` hardened against the constructor escape; it is not a process boundary, so treat `figma_write` code as having your user's trust level. Reports are in scope when they involve:
+`figma-bridge-mcp` runs an HTTP bridge bound to `localhost:47451` and executes `figma_write` JavaScript inside a VM sandbox. The bridge accepts only requests with no `Origin` or `Origin: null` and a loopback `Host`, so web pages and DNS rebinding cannot reach it. The sandbox is `node:vm` hardened against the constructor escape; it is not a process boundary, so treat `figma_write` code as having your user's trust level. Reports are in scope when they involve:
 
 - Sandbox escape from `figma_write` code execution
 - The bridge accepting connections from non-local origins

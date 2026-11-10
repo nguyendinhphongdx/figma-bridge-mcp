@@ -9,7 +9,7 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
       background: #1a1b2e; color: #e2e4f0;
       padding: 14px; width: 320px; height: 420px;
-      font-size: 12px; overflow: hidden;
+      font-size: 12px; overflow: hidden; position: relative;
       display: flex; flex-direction: column;
     }
 
@@ -87,6 +87,26 @@
       color: #fff; border-color: transparent;
     }
     button.primary:hover { opacity: 0.9; }
+
+    /* Settings */
+    .icon-btn { flex: none; width: 28px; height: 28px; padding: 0; margin-left: auto; font-size: 14px; line-height: 1; }
+    .settings {
+      position: absolute; inset: 0; background: #1a1b2e; padding: 14px;
+      display: none; flex-direction: column; z-index: 10; overflow-y: auto;
+    }
+    .settings.open { display: flex; }
+    .settings h2 { font-size: 13px; font-weight: 700; color: #f0f0ff; flex: 1; }
+    .settings .top { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .field { background: #141525; border: 1px solid #2a2b45; border-radius: 10px; padding: 9px 12px; margin-bottom: 8px; }
+    .field .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .field label { font-size: 11px; color: #c0c4e0; }
+    .field .hint { font-size: 9.5px; color: #6b70a0; margin-top: 4px; line-height: 1.4; }
+    select {
+      background: #0f1020; color: #e2e4f0; border: 1px solid #2a2b45; border-radius: 6px;
+      padding: 4px 6px; font-size: 11px; font-family: inherit;
+    }
+    input[type=checkbox] { accent-color: #7c5bf5; width: 14px; height: 14px; }
+    .url { font-family: 'SF Mono', 'JetBrains Mono', monospace; font-size: 10px; color: #60a5fa; user-select: all; word-break: break-all; }
   </style>
 </head>
 <body>
@@ -133,8 +153,9 @@
     </div>
     <div>
       <h1>Bridge MCP for Figma</h1>
-      <p>AI-powered design bridge · port <span id="port-display" onclick="changePort()" style="cursor:pointer;text-decoration:underline dotted;color:#7c5bf5" title="Click to change port">47451</span></p>
+      <p>AI-powered design bridge · port <span id="port-display" onclick="changePort()" style="cursor:pointer;text-decoration:underline dotted;color:#7c5bf5" title="Open settings">47451</span></p>
     </div>
+    <button class="icon-btn" onclick="openSettings()" title="Settings" aria-label="Settings">&#9881;</button>
   </header>
 
   <div class="status-bar">
@@ -160,6 +181,53 @@
     <button class="primary" onclick="reconnect()">Reconnect</button>
   </div>
 
+  <div class="settings" id="settings">
+    <div class="top">
+      <button class="icon-btn" style="margin-left:0" onclick="closeSettings()" title="Back" aria-label="Back">&#8592;</button>
+      <h2>Settings</h2>
+    </div>
+
+    <div class="field">
+      <div class="row">
+        <label for="set-port">Bridge port</label>
+        <select id="set-port" onchange="onPortSelect(this.value)"></select>
+      </div>
+      <div class="hint">Must match <code>FIGMA_MCP_PORT</code> on the server. Figma only allows ports 47451&ndash;47460 (see manifest).</div>
+      <div class="hint">Status page: <span class="url" id="status-url"></span></div>
+    </div>
+
+    <div class="field">
+      <div class="row">
+        <label for="set-autoscan">Find the bridge automatically</label>
+        <input type="checkbox" id="set-autoscan" onchange="onToggle('autoScan', this.checked)">
+      </div>
+      <div class="hint">When the bridge stops answering, scan the port range and switch to the port that responds.</div>
+    </div>
+
+    <div class="field">
+      <div class="row">
+        <label for="set-focus">Reconnect when I return to Figma</label>
+        <input type="checkbox" id="set-focus" onchange="onToggle('reconnectOnFocus', this.checked)">
+      </div>
+      <div class="hint">Recovers a poll that was throttled while the window was in the background.</div>
+    </div>
+
+    <div class="field">
+      <div class="row">
+        <label for="set-verbose">Activity log</label>
+        <select id="set-verbose" onchange="onToggle('verbose', this.value === 'all')">
+          <option value="all">Every command</option>
+          <option value="quiet">Errors and status only</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-top:auto">
+      <button onclick="resetSettings()">Reset to defaults</button>
+      <button class="primary" onclick="closeSettings()">Done</button>
+    </div>
+  </div>
+
   <script>
     var currentPort = 47451;
     var BRIDGE  = "http://localhost:" + currentPort;
@@ -176,7 +244,43 @@
     var writeCount = 0, readCount = 0, errCount = 0;
     var polling = true;
 
-    var logEl    = document.getElementById("log");
+    // ── Settings (persisted by the main thread via figma.clientStorage) ──────
+    var PORT_MIN = 47451, PORT_MAX = 47460;   // = manifest networkAccess.allowedDomains
+    var DEFAULTS = { port: PORT_MIN, autoScan: true, reconnectOnFocus: true, verbose: true };
+    var settings = Object.assign({}, DEFAULTS);
+    var scanning = false;
+
+    function saveSettings() {
+      parent.postMessage({ pluginMessage: { type: "settings-set", settings: settings } }, "*");
+    }
+    function renderSettings() {
+      var sel = document.getElementById("set-port");
+      if (!sel.options.length) {
+        for (var p = PORT_MIN; p <= PORT_MAX; p++) {
+          var o = document.createElement("option"); o.value = p; o.textContent = p; sel.appendChild(o);
+        }
+      }
+      sel.value = String(currentPort);
+      document.getElementById("set-autoscan").checked = !!settings.autoScan;
+      document.getElementById("set-focus").checked = !!settings.reconnectOnFocus;
+      document.getElementById("set-verbose").value = settings.verbose ? "all" : "quiet";
+      document.getElementById("status-url").textContent = "http://localhost:" + currentPort + "/ui";
+    }
+    function openSettings()  { renderSettings(); document.getElementById("settings").classList.add("open"); }
+    function closeSettings() { document.getElementById("settings").classList.remove("open"); }
+    function onToggle(key, value) { settings[key] = value; saveSettings(); }
+    function onPortSelect(value) {
+      var p = parseInt(value, 10);
+      if (p >= PORT_MIN && p <= PORT_MAX) setPort(p);
+    }
+    function resetSettings() {
+      settings = Object.assign({}, DEFAULTS);
+      saveSettings();
+      if (currentPort !== DEFAULTS.port) setPort(DEFAULTS.port, true); else renderSettings();
+      log("Settings reset to defaults", "info");
+    }
+
+    var logEl   = document.getElementById("log");
     var dotEl    = document.getElementById("dot");
     var statusEl = document.getElementById("status-text");
     var modeEl   = document.getElementById("mode-badge");
@@ -189,7 +293,9 @@
       if (mode) modeEl.textContent = mode;
     }
 
-    function log(msg, cls) {
+    // `noisy` marks per-command lines, which the "errors and status only" level hides.
+    function log(msg, cls, noisy) {
+      if (noisy && !settings.verbose) return;
       var line = document.createElement("div");
       if (cls) line.className = cls;
       var ts = new Date().toLocaleTimeString("en", { hour12: false });
@@ -252,7 +358,7 @@
 
           for (var i = 0; i < reqs.length; i++) {
             var req = reqs[i];
-            log("→ " + req.operation, READ_OPS.indexOf(req.operation) >= 0 ? "info" : "ok");
+            log("→ " + req.operation, READ_OPS.indexOf(req.operation) >= 0 ? "info" : "ok", true);
             dispatchToMain(req);
           }
         } catch (e) {
@@ -266,6 +372,8 @@
             setStatus("red", "Cannot connect — run: npx @hanoilab/figma-bridge-mcp");
           }
           if (consecutiveErrors === 1) log("Connecting to bridge — if first run, npx is downloading...", "info");
+          // Bridge may have moved to another port in the range (the server tries the next one when busy).
+          if (settings.autoScan && consecutiveErrors >= 4 && consecutiveErrors % 4 === 0) scanForBridge(false);
           await sleep(backoff);
           continue;
         }
@@ -289,7 +397,7 @@
     // immediately force-reconnect so they don't wait for the next poll cycle
     // (browsers throttle background fetch to ~1Hz; HEALTH_TTL may have expired).
     document.addEventListener("visibilitychange", function() {
-      if (document.visibilityState !== "visible" || !everConnected) return;
+      if (document.visibilityState !== "visible" || !everConnected || !settings.reconnectOnFocus) return;
       var idleMs = Date.now() - lastSuccessfulPollAt;
       // Force reconnect if any of:
       //  - in-flight poll (might be stuck on a backgrounded socket)
@@ -301,46 +409,74 @@
       }
     });
 
-    function changePort() {
-      var input = prompt("Enter bridge port (default 47451):", currentPort);
-      if (!input) return;
-      var newPort = parseInt(input, 10);
-      if (isNaN(newPort) || newPort < 1024 || newPort > 65535) { alert("Invalid port"); return; }
-      setPort(newPort);
-    }
+    // prompt()/alert() are unavailable in Figma plugin iframes, so the port is
+    // chosen in the settings panel instead.
+    function changePort() { openSettings(); }
 
-    function setPort(port) {
+    // `persist` is false only while applying values loaded from storage.
+    function setPort(port, quiet) {
       currentPort = port;
       BRIDGE = "http://localhost:" + currentPort;
       document.getElementById("port-display").textContent = currentPort;
-      log("Port set to " + currentPort, "info");
+      settings.port = port;
+      if (quiet !== "load") saveSettings();
+      if (!quiet) log("Port set to " + currentPort, "info");
+      renderSettings();
       reconnect();
     }
 
-    async function autoDetectPort() {
-      setStatus("yellow", "Scanning ports...");
-      log("Scanning 47451-47460...", "info");
-      for (var p = 47451; p <= 47460; p++) {
+    // Look for a bridge on the allowed ports. Returns the port found, or null.
+    async function findBridge() {
+      for (var p = PORT_MIN; p <= PORT_MAX; p++) {
         try {
           var res = await fetch("http://localhost:" + p + "/health", { signal: AbortSignal.timeout(500) });
           if (res.ok) {
             var data = await res.json();
-            if (data.pluginConnected !== undefined) {
-              log("Found bridge on port " + p + (data.pluginConnected ? " (plugin connected)" : " (no plugin)"), "ok");
-              setPort(p);
-              return;
-            }
+            if (data.pluginConnected !== undefined) return { port: p, pluginConnected: data.pluginConnected };
           }
-        } catch(e) { /* port not responding */ }
+        } catch (e) { /* port not responding */ }
       }
-      log("No bridge found on 47451-47460. Reset to 47451.", "err");
-      setPort(47451);
+      return null;
+    }
+
+    // Background scan used while disconnected: never resets the port when nothing is found.
+    async function scanForBridge() {
+      if (scanning) return;
+      scanning = true;
+      try {
+        var found = await findBridge();
+        if (found && found.port !== currentPort) {
+          log("Bridge found on port " + found.port + " — switching", "ok");
+          setPort(found.port, true);
+        }
+      } finally { scanning = false; }
+    }
+
+    async function autoDetectPort() {
+      setStatus("yellow", "Scanning ports...");
+      log("Scanning " + PORT_MIN + "-" + PORT_MAX + "...", "info");
+      var found = await findBridge();
+      if (found) {
+        log("Found bridge on port " + found.port + (found.pluginConnected ? " (plugin connected)" : " (no plugin)"), "ok");
+        setPort(found.port, true);
+      } else {
+        log("No bridge found on " + PORT_MIN + "-" + PORT_MAX + ". Is the MCP server running? (npx -y kill-port " + PORT_MIN + " frees a stuck port)", "err");
+        reconnect();
+      }
     }
 
     window.onmessage = async function(event) {
       var msg = event.data.pluginMessage;
       if (!msg) return;
       // Session info from plugin main thread
+      if (msg.type === "settings") {
+        if (msg.settings && typeof msg.settings === "object") {
+          settings = Object.assign({}, DEFAULTS, msg.settings);
+          if (settings.port >= PORT_MIN && settings.port <= PORT_MAX && settings.port !== currentPort) setPort(settings.port, "load");
+          else renderSettings();
+        }
+        return;
+      }
       if (msg.type === "session-info") {
         sessionId = msg.sessionId || null;
         fileName = msg.fileName || null;
@@ -362,7 +498,7 @@
       if (msg.success) {
         if (isRead) { readCount++; document.getElementById("read-count").textContent = readCount; }
         else        { writeCount++; document.getElementById("write-count").textContent = writeCount; }
-        log("✓ " + (msg.id ? msg.id.slice(-6) : "?"), "ok");
+        log("✓ " + (msg.id ? msg.id.slice(-6) : "?"), "ok", true);
       } else {
         errCount++;
         document.getElementById("err-count").textContent = errCount;
@@ -371,6 +507,8 @@
       await sendResponse(msg.id, msg.success, msg.data, msg.error);
     };
 
+    renderSettings();
+    parent.postMessage({ pluginMessage: { type: "settings-get" } }, "*");
     poll();
   </script>
 </body>

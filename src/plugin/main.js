@@ -29,6 +29,19 @@ function sanitizeForPostMessage(obj) {
 }
 
 figma.ui.onmessage = async (request) => {
+  // UI settings (port, log level, ...) persist per user via clientStorage: the
+  // plugin iframe has no reliable localStorage. These carry no op id.
+  if (request && request.type === "settings-get") {
+    var savedSettings = null;
+    try { savedSettings = await figma.clientStorage.getAsync("bridgeSettings"); } catch (e) { /* storage unavailable */ }
+    figma.ui.postMessage({ type: "settings", settings: savedSettings || null });
+    return;
+  }
+  if (request && request.type === "settings-set") {
+    try { await figma.clientStorage.setAsync("bridgeSettings", request.settings); } catch (e) { /* ignore */ }
+    return;
+  }
+
   const { id, operation, params } = request;
   const handler = handlers[operation];
 

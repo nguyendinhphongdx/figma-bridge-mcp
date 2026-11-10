@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 import { ALL_OPS } from "./allowed-ops.js";
+import { STATUS_PAGE } from "./status-page.js";
 
 // From package.json so the / route cannot report a stale version.
 const VERSION = JSON.parse(
@@ -275,7 +276,13 @@ export class BridgeServer {
   // malicious page from driving /exec, and checking Host stops DNS rebinding.
   #isAllowedRequest(req) {
     var origin = req.headers.origin;
-    if (origin !== undefined && origin !== "null") return false;
+    if (origin !== undefined && origin !== "null") {
+      // Allow only the status page calling back into its own origin: a loopback
+      // origin on the same port. Any other site (or rebinding host) stays blocked.
+      var m = /^http:\/\/(127\.0\.0\.1|localhost|\[::1\]):(\d+)$/i.exec(origin);
+      var hostPort = ((req.headers.host || "").match(/:(\d+)$/) || [])[1];
+      if (!m || !hostPort || m[2] !== hostPort) return false;
+    }
     var host = (req.headers.host || "").replace(/:\d+$/, "").toLowerCase();
     if (host !== "127.0.0.1" && host !== "localhost" && host !== "[::1]") {
       // Only enforced while bound to loopback; an explicit FIGMA_MCP_HOST override opts out.
@@ -299,6 +306,17 @@ export class BridgeServer {
     var sessionId = url.searchParams.get("sessionId") || req.headers["x-session-id"] || null;
     var fileName = url.searchParams.get("fileName") || null;
 
+    // Temporary status page for humans: /ui, and / when the client asks for HTML.
+    var wantsHtml = (req.headers.accept || "").indexOf("text/html") !== -1;
+    if (req.method === "GET" && (path === "/ui" || (path === "/" && wantsHtml))) {
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'");
+      res.setHeader("Cache-Control", "no-store");
+      res.writeHead(200);
+      res.end(STATUS_PAGE);
+      return;
+    }
+
     // Root
     if (path === "/" && req.method === "GET") {
       res.writeHead(200);
@@ -307,7 +325,7 @@ export class BridgeServer {
         pluginConnected: this.isPluginConnected(),
         sessions: this.getSessions(),
         queueLength: this.queueLength,
-        endpoints: ["/health", "/poll", "/response", "/exec", "/clear", "/sessions"],
+        endpoints: ["/ui", "/health", "/poll", "/response", "/exec", "/clear", "/sessions"],
       }));
       return;
     }

@@ -11,6 +11,7 @@
     "server/cli.js",
     "server/index.js",
     "server/bridge-server.js",
+    "server/status-page.js",
     "server/code-executor.js", "server/allowed-ops.js", "server/icon-libraries.js", "server/http-fetch.js", "server/figma-proxy.js",
     "server/tool-definitions.js",
     "server/api-docs.js", "server/docs/",

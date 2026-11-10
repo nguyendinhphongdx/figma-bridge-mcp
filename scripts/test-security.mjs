@@ -49,6 +49,19 @@ ok("rebinding Host rejected",                   (await req("/health", { headers:
 ok("GET /clear no longer works",                (await req("/clear")).status === 404);
 ok("POST /clear works",                         (await req("/clear", { method: "POST" })).status === 200);
 
+console.log("\n── status page ──");
+{
+  const html = await req("/ui", { headers: { Accept: "text/html" } });
+  ok("/ui serves the status page", html.status === 200 && /<title>Bridge MCP for Figma/.test(html.body));
+  ok("browser GET / gets HTML", /<!doctype html>/i.test((await req("/", { headers: { Accept: "text/html" } })).body));
+  ok("client GET / still gets JSON", JSON.parse((await req("/")).body).server === "figma-bridge-mcp");
+  ok("page never uses innerHTML", !/innerHTML/.test(html.body));
+  const self = `http://localhost:${b.port}`;
+  ok("same-origin POST /clear from the page allowed", (await req("/clear", { method: "POST", headers: { Origin: self } })).status === 200);
+  ok("other port on loopback rejected", (await req("/clear", { method: "POST", headers: { Origin: `http://localhost:${b.port + 1}` } })).status === 403);
+  ok("rebinding origin+host rejected", (await req("/clear", { method: "POST", headers: { Origin: `http://evil.example:${b.port}`, Host: `evil.example:${b.port}` } })).status === 403);
+}
+
 console.log("\n── session pinning ──");
 let pinned = "";
 try { await b.sendOperation("status", {}, "no-such-session"); pinned = "resolved"; } catch (e) { pinned = e.message; }

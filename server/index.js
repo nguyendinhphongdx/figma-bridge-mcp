@@ -83,7 +83,8 @@ if (existingHealth.pluginConnected) {
   // No healthy primary bridge — try to start our own
   try {
     bridge = await new BridgeServer().start();
-    process.stderr.write("[figma-bridge-mcp] Bridge started on port " + bridge.port + "\n");
+    if (bridge.listening) process.stderr.write("[figma-bridge-mcp] Bridge started on port " + bridge.port + "\n");
+    else process.stderr.write("[figma-bridge-mcp] Bridge NOT started: " + bridge.bindError + "\n");
   } catch (e) {
     useHttpProxy = true;
     bridge = httpProxy;
@@ -141,6 +142,8 @@ server.setRequestHandler(CallToolRequestSchema, async ({ params: { name, argumen
         type: "text",
         text: JSON.stringify({
           bridgePort:      bridge.port || CONFIG.PORT,
+          bridgeListening: useHttpProxy ? true : bridge.listening,
+          bridgeError:     useHttpProxy ? null : (bridge.bindError || null),
           pluginConnected: connected,
           pluginInfo,
           mode:            useHttpProxy ? "http-proxy" : "direct",
@@ -148,7 +151,9 @@ server.setRequestHandler(CallToolRequestSchema, async ({ params: { name, argumen
           lastPollAgoMs:   healthData.lastPollAgoMs || (bridge.lastPollAt ? Date.now() - bridge.lastPollAt : null),
           stats:           healthData.stats || (bridge.stats ? bridge.stats : null),
           sessions:        bridge.getSessions ? bridge.getSessions() : [],
-          hint: connected
+          hint: (!useHttpProxy && bridge.listening === false)
+            ? "The bridge could not bind a port, so the Figma plugin can never connect. " + bridge.bindError + ". Free the port, or set FIGMA_MCP_PORT to a free one."
+            : connected
             ? "CONNECTED. BEFORE drawing anything: call figma_docs to load mandatory design rules (token system, component-first, icon sizing, layer order). Skipping figma_docs causes incorrect, hardcoded, low-quality UI."
             : "Plugin not connected. In Figma Desktop: Plugins → Development → Bridge MCP for Figma → Run",
         }, null, 2),

@@ -62,6 +62,19 @@ console.log("\n── status page ──");
   ok("rebinding origin+host rejected", (await req("/clear", { method: "POST", headers: { Origin: `http://evil.example:${b.port}`, Host: `evil.example:${b.port}` } })).status === 403);
 }
 
+console.log("\n── honest bind status ──");
+{
+  ok("a bound bridge reports listening", b.listening === true && b.bindError === null);
+  const net = await import("node:net");
+  const held = [];
+  for (let p = 47620; p < 47630; p++) { const s = net.createServer(); await new Promise((r) => s.listen(p, "127.0.0.1", r)); held.push(s); }
+  const mod = await import("../server/bridge-server.js?exhausted");
+  mod.CONFIG.PORT = 47620;
+  const blocked = await new mod.BridgeServer().start();
+  ok("exhausted port range is reported, not hidden", blocked.listening === false && /could not bind/.test(blocked.bindError || ""), String(blocked.bindError));
+  held.forEach((s) => s.close());
+}
+
 console.log("\n── session pinning ──");
 let pinned = "";
 try { await b.sendOperation("status", {}, "no-such-session"); pinned = "resolved"; } catch (e) { pinned = e.message; }

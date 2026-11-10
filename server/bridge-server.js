@@ -60,6 +60,9 @@ export class BridgeServer {
   #opToSession = new Map();   // opId -> sessionId (global reverse lookup)
   #server = null;
   #server6 = null;
+  #listening = false;
+  #lastCode = null;
+  #bindError = null;   // why no port could be bound, if so
   #actualPort = CONFIG.PORT;
   #globalStats = { ops: 0, avgLatencyMs: 0, reconnects: 0 };
 
@@ -68,6 +71,8 @@ export class BridgeServer {
   // ── Public getters (backward compat) ──────────────────────────────────────
 
   get port() { return this.#actualPort; }
+  get listening() { return this.#listening; }
+  get bindError() { return this.#bindError; }
 
   get lastPollAt() {
     var latest = 0;
@@ -474,12 +479,16 @@ export class BridgeServer {
 
       var tryPort = function(port, attempt) {
         if (attempt >= CONFIG.PORT_RANGE) {
-          process.stderr.write("[figma-bridge-mcp] All ports " + CONFIG.PORT + "-" + (CONFIG.PORT + CONFIG.PORT_RANGE - 1) + " in use.\n");
+          // Do not pretend to be running: record why, so figma_status and the log say so.
+          self.#listening = false;
+          self.#bindError = "could not bind any port in " + CONFIG.PORT + "-" + (CONFIG.PORT + CONFIG.PORT_RANGE - 1) + " on " + CONFIG.HOST + " (last error: " + (self.#lastCode || "EADDRINUSE") + ")";
+          process.stderr.write("[figma-bridge-mcp] ERROR: " + self.#bindError + ". The Figma plugin cannot connect. Check what holds the port: netstat -ano | findstr :" + CONFIG.PORT + "  and  netsh interface ipv4 show excludedportrange protocol=tcp\n");
           resolve(self);
           return;
         }
         self.#server = http.createServer(function(req, res) { self.#route(req, res); });
         self.#server.once("error", function(err) {
+          self.#lastCode = err.code;
           if (err.code === "EADDRINUSE") {
             process.stderr.write("[figma-bridge-mcp] Port " + port + " in use — trying " + (port + 1) + "...\n");
             tryPort(port + 1, attempt + 1);
@@ -490,6 +499,8 @@ export class BridgeServer {
         });
         self.#server.once("listening", function() {
           self.#actualPort = port;
+          self.#listening = true;
+          self.#bindError = null;
           // The plugin must call "localhost" (Figma's manifest allowlist), and on
           // many systems that resolves to ::1 first. Also listen on IPv6 loopback
           // so those clients connect; failure (IPv6 disabled/taken) is harmless.

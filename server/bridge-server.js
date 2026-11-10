@@ -58,6 +58,7 @@ export class BridgeServer {
   #sessions = new Map();      // sessionId -> Session
   #opToSession = new Map();   // opId -> sessionId (global reverse lookup)
   #server = null;
+  #server6 = null;
   #actualPort = CONFIG.PORT;
   #globalStats = { ops: 0, avgLatencyMs: 0, reconnects: 0 };
 
@@ -471,6 +472,14 @@ export class BridgeServer {
         });
         self.#server.once("listening", function() {
           self.#actualPort = port;
+          // The plugin must call "localhost" (Figma's manifest allowlist), and on
+          // many systems that resolves to ::1 first. Also listen on IPv6 loopback
+          // so those clients connect; failure (IPv6 disabled/taken) is harmless.
+          if (CONFIG.HOST === "127.0.0.1") {
+            self.#server6 = http.createServer(function(req, res) { self.#route(req, res); });
+            self.#server6.on("error", function() { self.#server6 = null; });
+            self.#server6.listen({ port: port, host: "::1", ipv6Only: true });
+          }
           resolve(self);
         });
         self.#server.listen(port, CONFIG.HOST);
@@ -491,6 +500,7 @@ export class BridgeServer {
       }
     }
     if (this.#server) { this.#server.close(); this.#server = null; }
+    if (this.#server6) { this.#server6.close(); this.#server6 = null; }
     for (var [id, sid] of this.#opToSession) {
       var s = this.#sessions.get(sid);
       if (s) {

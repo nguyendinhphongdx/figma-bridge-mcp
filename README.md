@@ -1,121 +1,119 @@
-# figma-bridge-mcp
+<div align="center">
 
-<p align="center">
-  <img src="assets/logo-v6.png" alt="figma-bridge-mcp — Claude Code to Figma, AI to Figma, MCP Figma Bridge" width="480" />
-</p>
+<img src="assets/logo-v6.png" alt="figma-bridge-mcp — Bridge MCP for Figma" width="460" />
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/figma-bridge-mcp"><img src="https://img.shields.io/npm/v/@hanoilab/figma-bridge-mcp?color=blue" alt="npm version" /></a>
-  <a href="https://registry.modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP-Registry-purple" alt="MCP Registry" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
-  <a href="https://github.com/nguyendinhphongdx/figma-bridge-mcp/stargazers"><img src="https://img.shields.io/github/stars/nguyendinhphongdx/figma-bridge-mcp?style=social" alt="GitHub stars" /></a>
-  <a href="https://mcpvault.io/servers/figma-bridge-mcp/health?utm_source=external_badge&utm_medium=referral&utm_campaign=mcp_health_report"><img src="https://mcpvault.io/badge/figma-bridge-mcp.svg" alt="MCPVault: claimed" /></a>
-</p>
+### Let AI draw on your Figma canvas — and read your designs back as code.
 
-<p align="center">
-  <strong>Claude Code to Figma</strong> · <strong>Antigravity to Figma</strong> · <strong>Cursor to Figma</strong> · <strong>Any MCP IDE to Figma</strong>
-</p>
+A bidirectional [Model Context Protocol](https://modelcontextprotocol.io) bridge for **Figma Desktop**.<br/>
+No Figma API key. No cloud. Everything runs on `localhost`.
 
-<p align="center">
-  <sub>✅ Tested: Claude Code, Antigravity &nbsp;|&nbsp; 🔧 Compatible: Cursor, VS Code, Windsurf, Zed (any MCP stdio client)</sub>
-</p>
+[![npm](https://img.shields.io/npm/v/@hanoilab/figma-bridge-mcp?color=2563eb&label=npm)](https://www.npmjs.com/package/@hanoilab/figma-bridge-mcp)
+[![CI](https://github.com/nguyendinhphongdx/figma-bridge-mcp/actions/workflows/release.yml/badge.svg)](https://github.com/nguyendinhphongdx/figma-bridge-mcp/actions/workflows/release.yml)
+[![Node](https://img.shields.io/badge/node-%E2%89%A518-16a34a)](package.json)
+[![MCP Registry](https://img.shields.io/badge/MCP-Registry-8b5cf6)](https://registry.modelcontextprotocol.io)
+[![License: MIT](https://img.shields.io/badge/license-MIT-eab308)](LICENSE)
 
-**Bidirectional Figma MCP bridge** — let AI assistants (Claude Code, Cursor, Windsurf, Antigravity, VS Code Copilot, or any MCP-compatible IDE) **draw UI directly on Figma canvas** and **read existing designs back** as structured data, screenshots, or code-ready tokens. No Figma API key needed — works entirely over localhost.
+[Quick start](#quick-start) · [How it works](#how-it-works) · [Tools](#tools) · [Security](#security-model) · [Troubleshooting](#troubleshooting) · [Changelog](CHANGELOG.md)
+
+</div>
 
 > **Not affiliated with, endorsed by, or sponsored by Figma, Inc.** "Figma" is a trademark of Figma, Inc., used here only to describe compatibility.
 
-> **Requires Figma Desktop** — the plugin communicates with the MCP server over `localhost` HTTP polling. Figma's web app does not allow localhost network access, so **Figma Desktop is required**.
+---
 
-```
-Claude ──figma_write──▶ MCP Server ──HTTP (localhost:38451)──▶ Figma Plugin ──▶ Figma Document
-Claude ◀─figma_read──── MCP Server ◀──HTTP (localhost:38451)── Figma Plugin ◀── Figma Document
-```
+## Overview
 
-### How the localhost bridge works
+`figma-bridge-mcp` connects an AI assistant to the document you have open in Figma Desktop.
 
-The MCP server starts a small HTTP server bound to `localhost:38451`. The Figma plugin (running inside Figma Desktop) uses **long polling** — the server holds requests up to 8s until work arrives, flushing immediately when new ops are queued (near-realtime latency <100ms). All traffic stays on your machine — nothing is sent to any external server.
+| | |
+|---|---|
+| ✍️ **Write** | The AI runs JavaScript against a `figma.*` API to create frames, text, vectors, components, variables, prototypes. |
+| 👀 **Read** | The AI extracts node trees, resolved design tokens, CSS, component maps and screenshots — ready for design-to-code. |
+| 🔒 **Local** | The bridge listens on `127.0.0.1` only. Nothing leaves your machine. |
+| 🧩 **Any MCP client** | ✅ Tested with Claude Code and Antigravity. 🔧 Compatible with Cursor, VS Code, Windsurf, Zed and any stdio MCP client. |
 
-**Multi-instance support (v2.3.0+):** Multiple Figma files/tabs can connect simultaneously. Each plugin instance sends a `sessionId`, and the bridge routes operations to the correct session. Use the optional `sessionId` param in `figma_write`/`figma_read` to target a specific file.
+> **Requires Figma Desktop.** The plugin talks to the server over `localhost`, which Figma's web app does not allow.
 
 ---
 
-## Features
+## How it works
 
-| Direction | Tool | What it does |
-|-----------|------|-------------|
-| Write | `figma_write` | Draw frames, shapes, text, prototypes via JS code |
-| Read  | `figma_read`  | Extract node trees, colors, typography, screenshots |
-| Info  | `figma_status`| Check plugin connection + active sessions |
-| Docs  | `figma_docs`  | Get full API reference + examples |
-| Rules | `figma_rules` | Generate design system rule sheet — tokens, typography, components |
+Three parts cooperate: your **AI client**, the **MCP server** (Node), and the **Figma plugin** (inside Figma Desktop). The plugin polls the server, so no inbound connection to Figma is ever needed.
 
-### What's new in v2.5
+```mermaid
+flowchart LR
+  subgraph Client["AI client"]
+    A["Claude Code · Cursor · Windsurf<br/>VS Code · Antigravity · any MCP client"]
+  end
+  subgraph Server["figma-bridge-mcp  (Node)"]
+    B["MCP server<br/>5 tools · stdio"]
+    C["Code sandbox<br/>runs figma_write code"]
+    D["HTTP bridge<br/>127.0.0.1:38451"]
+  end
+  subgraph Figma["Figma Desktop"]
+    E["Plugin UI<br/>long-poll client"]
+    F["Plugin main thread<br/>66 operations"]
+    G[("Figma document")]
+  end
+  A <-->|"MCP / stdio"| B
+  B --> C
+  C --> D
+  B --> D
+  D <-->|"HTTP long-poll"| E
+  E <-->|postMessage| F
+  F <--> G
+```
 
-| Feature | Description |
-|---------|-------------|
-| **`get_design_context`** | AI-optimized payload for a node — flex layout, token-resolved colors (`var(--name)`), typography with style names, component instances with variant properties. Best single call for design→React/Vue/Swift code. |
-| **`get_component_map`** | List every component instance in a frame with `componentSetName`, `variantLabel`, properties, and `suggestedImport` path. Scaffold import statements in one call. |
-| **`get_unmapped_components`** | Find component instances that have no description in Figma (no code mapping yet). Prompts AI to ask user for correct import paths. |
-| **`figma_rules` tool** | New top-level MCP tool — aggregates color tokens, typography styles, variables (all modes), and component catalog into a single markdown rule sheet. Equivalent to official Figma MCP's `create_design_system_rules`. Call once at session start. |
-| **`get_css` operation** | `figma_read get_css { nodeId }` → ready-to-use CSS string (flex, typography, fill, border, shadow, opacity, transform). One call, paste into code. |
-| **Resolved variables** | `get_node_detail` now resolves `boundVariables` IDs → `{ name, resolvedType, value }`. No more manual ID lookup. |
-| **Resolved style refs** | `fillStyleId` / `textStyleId` now include `fillStyle: { name, hex }` and `textStyle: { name, fontSize, fontFamily }`. |
-| **Instance overrides detail** | `overrides: [{ id, overriddenFields: ["fills","characters",...] }]` — full diff vs mainComponent, not just count. |
-| **`componentSetName` + `variantLabel`** | INSTANCE nodes now expose set name (`"Button"`) and variant label (`"State=Primary, Size=Large"`) separately. |
-| **`insertIndex` for create** | `figma.create({ ..., insertIndex: 2 })` — insert node at exact position in parent, not always at end. |
-| **Typography tokens** | `setupDesignTokens({ fontSizes, fonts, textStyles })` — 1 call bootstrap full typography system with variable-bound text styles. Multi-mode (Compact/Comfortable/Large) supported. |
-| **`applyTextStyle`** | Apply a local text style to a TEXT node by name in 1 call — auto-loads font. |
-| **STRING variables for fonts** | `applyVariable` now binds `fontFamily`, `fontStyle`, `characters` (swap Inter → SF Pro via 1 variable). |
-| **Effects** | `effects: [{ type: "DROP_SHADOW" \| "INNER_SHADOW" \| "LAYER_BLUR" \| "BACKGROUND_BLUR", ... }]` on any node. |
-| **Gradient fills** | `fill: { type: "LINEAR_GRADIENT" \| "RADIAL_GRADIENT", angle, stops }` in create/modify. |
-| **Individual corner radii** | `topLeftRadius`, `topRightRadius`, `bottomLeftRadius`, `bottomRightRadius` on FRAME/RECT. |
-| **8-digit hex + rgba alpha** | `fill: "#FFFFFF80"` or `"rgba(255,255,255,0.5)"` — alpha auto-applied to paint opacity. |
-| **SVG arc (A) + commas** | VECTOR `d` paths accept `A` arc command (auto-converted to cubic Bézier) and commas. |
-| **Icon libraries** | 7 free open-source libraries, iOS-filled first: **Ionicons** → Fluent → Bootstrap → Phosphor → **Tabler Filled** → Tabler Outline → Lucide. |
-| **Instance overrides** | `figma.instantiate({ overrides: { "LayerName": { text, fill, fontSize } } })` — override props per-layer. |
-| **Batch delete** | `figma.delete({ ids: [...] })` — delete multiple nodes in 1 round-trip. |
-| **Prototyping** | `setReactions` — click/hover/press → navigate/overlay/swap with Smart Animate. |
-| **Scroll behavior** | `setScrollBehavior` — HORIZONTAL / VERTICAL / BOTH overflow. |
-| **Variants & instance swap** | `setComponentProperties` / `swapComponent` — variants + instance swap. |
-| **Component property definitions** *(v2.5.24)* | `addComponentProperty` + `bindComponentProperty` — create TEXT / BOOLEAN / INSTANCE_SWAP properties on master components. Instance text overrides now actually re-measure auto-layout (button grows to fit longer label). |
-| **Multi-instance** | Multiple Figma tabs connect simultaneously via sessions. |
+### One round trip
 
-Full version history: see [CHANGELOG.md](CHANGELOG.md).
+The server holds each poll open for up to 8 s and answers the moment work is queued, so latency is typically under 100 ms.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant AI as AI client
+  participant S as MCP server
+  participant B as Bridge :38451
+  participant P as Figma plugin
+  AI->>S: figma_write { code }
+  S->>S: run code in sandbox
+  S->>B: queue operation (create, modify, …)
+  P->>B: GET /poll  (held up to 8 s)
+  B-->>P: operations
+  P->>P: apply to the Figma document
+  P->>B: POST /response { id, data }
+  B-->>S: resolve operation
+  S-->>AI: result + logs
+```
+
+### Several Figma files at once
+
+Each open plugin instance registers its own **session**. Pass the optional `sessionId` to `figma_write` / `figma_read` to target a specific file; if that session is not connected the call fails instead of writing into another file.
 
 ---
 
-## Quick Start
+## Quick start
 
-### Step 1 — Add the MCP server to your AI client
+### 1 · Add the MCP server to your client
 
-Choose your platform:
-
-<details>
-<summary><strong>Claude Code (CLI)</strong></summary>
+<details open>
+<summary><strong>Claude Code</strong></summary>
 
 ```bash
-# Project scope (default)
-claude mcp add figma-bridge-mcp -- npx @hanoilab/figma-bridge-mcp
-
-# Global scope (all projects)
-claude mcp add --scope user figma-bridge-mcp -- npx @hanoilab/figma-bridge-mcp
+claude mcp add figma-bridge-mcp -- npx @hanoilab/figma-bridge-mcp          # this project
+claude mcp add --scope user figma-bridge-mcp -- npx @hanoilab/figma-bridge-mcp   # all projects
 ```
 </details>
 
 <details>
 <summary><strong>Claude Desktop</strong></summary>
 
-Edit config file:
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
 ```json
 {
   "mcpServers": {
-    "figma": {
-      "command": "npx",
-      "args": ["-y", "@hanoilab/figma-bridge-mcp"]
-    }
+    "figma": { "command": "npx", "args": ["-y", "@hanoilab/figma-bridge-mcp"] }
   }
 }
 ```
@@ -124,33 +122,19 @@ Edit config file:
 <details>
 <summary><strong>Cursor</strong></summary>
 
-Edit `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global):
-
-```json
-{
-  "mcpServers": {
-    "figma": {
-      "command": "npx",
-      "args": ["-y", "@hanoilab/figma-bridge-mcp"]
-    }
-  }
-}
-```
+Edit `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global) with the same `mcpServers` block shown for Claude Desktop.
 </details>
 
 <details>
 <summary><strong>VS Code / GitHub Copilot</strong></summary>
 
-Edit `.vscode/mcp.json` (project) or add to `settings.json` (global):
+Edit `.vscode/mcp.json`, or add to `settings.json`:
 
 ```json
 {
   "mcp": {
     "servers": {
-      "figma": {
-        "command": "npx",
-        "args": ["-y", "@hanoilab/figma-bridge-mcp"]
-      }
+      "figma": { "command": "npx", "args": ["-y", "@hanoilab/figma-bridge-mcp"] }
     }
   }
 }
@@ -160,498 +144,270 @@ Edit `.vscode/mcp.json` (project) or add to `settings.json` (global):
 <details>
 <summary><strong>Windsurf</strong></summary>
 
-Edit `~/.codeium/windsurf/mcp_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "figma": {
-      "command": "npx",
-      "args": ["-y", "@hanoilab/figma-bridge-mcp"]
-    }
-  }
-}
-```
+Edit `~/.codeium/windsurf/mcp_config.json` with the same `mcpServers` block shown for Claude Desktop.
 </details>
 
 <details>
 <summary><strong>Antigravity (Google)</strong></summary>
 
-1. Open **"..." dropdown** at the top of the agent panel
-2. Click **"Manage MCP Servers"** → **"View raw config"**
-3. Add to `mcp_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "figma": {
-      "command": "npx",
-      "args": ["-y", "@hanoilab/figma-bridge-mcp"]
-    }
-  }
-}
-```
+Agent panel **"…" menu → Manage MCP Servers → View raw config**, then add the same `mcpServers` block to `mcp_config.json`.
 </details>
 
 <details>
-<summary><strong>From source (any client)</strong></summary>
+<summary><strong>From source</strong></summary>
 
 ```bash
 git clone https://github.com/nguyendinhphongdx/figma-bridge-mcp
-cd figma-bridge-mcp
-npm install
-# Then point your MCP client to: node /path/to/figma-bridge-mcp/server/index.js
+cd figma-bridge-mcp && npm install
+# point your MCP client at: node /path/to/figma-bridge-mcp/server/index.js
 ```
 </details>
 
-> **⚠️ IMPORTANT: After adding the MCP server, you MUST restart your IDE / AI client (quit and reopen).** The MCP server only loads on startup — simply saving the config file is not enough. This applies to Claude Code, Cursor, VS Code, Windsurf, and Antigravity.
+> **Restart your client after editing its config.** MCP servers load only at startup.
 
-### Step 2 — Install the Figma plugin
+### 2 · Install the Figma plugin
 
-**[⬇ Download the plugin](https://github.com/nguyendinhphongdx/figma-bridge-mcp/releases/latest/download/figma-bridge-mcp-plugin.zip)** — no git clone needed
+1. **[⬇ Download the plugin](https://github.com/nguyendinhphongdx/figma-bridge-mcp/releases/latest/download/figma-bridge-mcp-plugin.zip)** and unzip it anywhere.
+2. In **Figma Desktop**: *Plugins → Development → Import plugin from manifest…* and pick `manifest.json`.
+3. Run *Plugins → Development → **Bridge MCP for Figma***.
 
-1. Download and **unzip** `figma-bridge-mcp-plugin.zip` anywhere on your machine
-2. Open **Figma Desktop** (required — web app cannot access localhost)
-3. Go to **Plugins → Development → Import plugin from manifest...**
-4. Select `manifest.json` from the unzipped folder
-5. Run **Plugins → Development → Bridge MCP for Figma**
+The plugin window shows a **green dot** once it reaches the server.
 
-The plugin UI shows a **green dot** when the MCP server is connected.
+### 3 · Connect and design
 
-### Updating to a newer version
+Tell your assistant:
 
-```bash
-# Step 1 — get the new version + plugin path
-npx @hanoilab/figma-bridge-mcp@latest --version
-# figma-bridge-mcp v2.5.12  —  plugin: /.../.npm/_npx/.../figma-bridge-mcp/plugin
+> *"Connect to figma-bridge-mcp"*
 
-# Step 2 — restart Claude / your IDE so the MCP server reloads
+It calls `figma_status` and confirms the file, page and plugin version. Then just describe what you want:
 
-# Step 3 — re-link the Figma plugin (manual, one-time per update)
-#   Figma Desktop → Plugins → Development → Manage plugins in development
-#   Remove old "Bridge MCP for Figma" → "+" → Import plugin from manifest...
-#   Select manifest.json from the plugin path printed in Step 1
+> *"Draw a mobile login screen with Apple and Google sign-in buttons."*
 
-# Step 4 — verify
-#   Ask your AI: "figma_status"
-#   pluginVersion in the response should match the npm version above
+```mermaid
+flowchart LR
+  P["Your prompt"] --> D["figma_docs<br/>load API + design rules"]
+  D --> R["figma_read<br/>inspect the canvas"]
+  R --> W["figma_write<br/>draw / modify"]
+  W --> S["figma_read screenshot<br/>verify"]
+  S -->|"needs fixes"| W
+  S -->|"looks right"| Done(["Done"])
 ```
 
-> The Figma plugin does **not** auto-update — re-linking (Step 3) is required whenever the plugin changes.
-
-### Step 3 — Connect AI to Figma
-
-Tell your AI assistant to connect:
-
-```
-"Connect to figma-bridge-mcp"
-```
-
-The AI will call `figma_status` and confirm:
-
-```
-✅ Connected — File: "My Project", Page: "Page 1", Plugin v2.5.5
-```
-
-> If you see "Plugin not connected", make sure the Figma plugin is running (Step 2).
-
-### Step 4 — Start designing with prompts
-
-Once connected, just describe what you want in natural language:
-
-```
-"Use figma-bridge-mcp to draw a login screen for mobile"
-```
-
-The AI will automatically:
-1. Call `figma_docs` to load the API reference and design rules
-2. Call `figma_read get_page_nodes` to understand the current canvas
-3. Call `figma_write` to create the design on your Figma canvas
-4. Call `figma_read screenshot` to verify the result
-
-### Prompt examples
+<details>
+<summary><strong>Prompt ideas and tips</strong></summary>
 
 | Prompt | What happens |
-|--------|-------------|
-| `"Draw a mobile login screen with social login buttons"` | Creates a 390×844 frame with email/password inputs, Apple/Google buttons |
-| `"Read the selected frame and describe the design"` | Extracts colors, typography, spacing from your selection |
-| `"Take a screenshot of the current frame"` | Returns an inline image the AI can analyze |
-| `"Create a dark theme dashboard with KPI cards"` | Draws a full dashboard layout with charts and stats |
-| `"Design an e-commerce product card"` | Creates a product card with image, price, rating, CTA |
-| `"Draw a settings page with toggle switches"` | Creates grouped settings with icons and toggles |
+|---|---|
+| "Draw a mobile login screen with social buttons" | A 390×844 frame with inputs and buttons |
+| "Read the selected frame and describe the design" | Colors, typography, spacing from your selection |
+| "Convert my selected frame to Tailwind" | Reads the node tree, generates code |
+| "Create a dark dashboard with KPI cards" | A full layout with stats and charts |
+| "Take a screenshot of the current frame" | An inline image the AI can analyze |
 
-### Tips for better results
+- **Name the style** (`dark`, `glassmorphism`, `minimal white`) and the **platform** (`mobile` 390×844, `tablet` 768×1024, `desktop` 1440×900).
+- **Iterate**: "make the buttons bigger" works on existing nodes — the AI reads before it modifies.
+- **Use selection**: select a frame, then ask "improve this design".
+</details>
 
-- **Be specific about style**: `"dark theme"`, `"glassmorphism"`, `"minimal white"` gives the AI clear direction
-- **Mention platform**: `"mobile"` (390×844), `"tablet"` (768×1024), `"desktop"` (1440×900)
-- **Iterate**: After the first draw, say `"fix the spacing"` or `"make the buttons bigger"` — the AI reads and modifies existing nodes
-- **Use selection**: Select a frame in Figma and ask `"improve this design"` — the AI reads your selection first
-- **Multi-screen flows**: `"Now draw the signup screen next to the login screen"` — the AI positions frames side by side
+### Updating
 
-### Workflow summary
-
-```
-You: "Connect to figma-bridge-mcp"
-AI:  ✅ Connected to Figma
-
-You: "Draw a mobile onboarding screen with 3 steps"
-AI:  [calls figma_docs → figma_write → figma_read screenshot]
-AI:  ✅ Done — here's what I created: [inline screenshot]
-
-You: "The title text is not centered"
-AI:  [calls figma_read get_selection → figma_write modify → screenshot]
-AI:  ✅ Fixed — text is now centered
-
-You: "Now draw the next onboarding screen beside it"
-AI:  [reads page_nodes to find position → draws at x+440]
-AI:  ✅ Done — 2 screens side by side
+```bash
+npx @hanoilab/figma-bridge-mcp@latest --version   # prints the new version and the plugin path
 ```
 
-```
-figma_status     — check connection (always call first)
-figma_docs       — load API reference (call before drawing)
-figma_write      — draw / modify UI on canvas
-figma_read       — extract design data, screenshots, SVG
-```
+Restart your client, then re-import `manifest.json` from the printed path (*Plugins → Development → Manage plugins in development*). The Figma plugin does **not** auto-update. Run `figma_status` and check that `pluginVersion` matches.
 
 ---
 
-## Usage Examples
+## Tools
 
-### Draw a screen
+The server exposes five MCP tools.
 
-Ask Claude: *"Draw a dark dashboard with a sidebar, header, and 4 KPI cards"*
+| Tool | Purpose |
+|---|---|
+| `figma_status` | Connection check, active file/page, sessions. Call first. |
+| `figma_docs` | The full API reference and design rules. Call before drawing. |
+| `figma_write` | Run JavaScript against the `figma.*` API to create or change the design. |
+| `figma_read` | Extract design data: trees, tokens, CSS, components, screenshots. |
+| `figma_rules` | One markdown rule sheet: color tokens, text styles, variables, components. Call once per session. |
 
-Claude calls `figma_write` with code like:
+### Design to code
+
+```mermaid
+flowchart LR
+  F["Select a frame<br/>in Figma"] --> A["get_design_context<br/>layout · tokens · typography"]
+  F --> B["get_css<br/>ready-to-paste CSS"]
+  F --> C["get_component_map<br/>instances + import paths"]
+  A --> AI(["AI generates<br/>React · Vue · Swift · Tailwind"])
+  B --> AI
+  C --> AI
+```
+
+### `figma_write` — 47 operations
+
+Code runs in a sandbox with the `figma` object; each call is isolated, so re-query node IDs at the start of every call.
 
 ```js
-await figma.createPage({ name: "Dashboard" });
-await figma.setPage({ name: "Dashboard" });
-
 const root = await figma.create({
-  type: "FRAME", name: "Dashboard",
-  x: 0, y: 0, width: 1440, height: 900,
-  fill: "#0f172a",
+  type: "FRAME", name: "Dashboard", width: 1440, height: 900, fill: "#0f172a",
 });
-
 const sidebar = await figma.create({
-  type: "FRAME", name: "Sidebar",
-  parentId: root.id,
-  x: 0, y: 0, width: 240, height: 900,
-  fill: "#1e293b", stroke: "#334155", strokeWeight: 1,
+  type: "FRAME", name: "Sidebar", parentId: root.id,
+  width: 240, height: 900, fill: "#1e293b", stroke: "#334155", strokeWeight: 1,
 });
-
 await figma.create({
-  type: "TEXT", name: "App Name",
-  parentId: sidebar.id,
-  x: 20, y: 24, content: "My App",
-  fontSize: 16, fontWeight: "SemiBold", fill: "#f8fafc",
+  type: "TEXT", parentId: sidebar.id, x: 20, y: 24,
+  content: "My App", fontSize: 16, fontWeight: "SemiBold", fill: "#f8fafc",
 });
-// ... continue
 ```
 
-### Read a design
+| Area | Operations |
+|---|---|
+| **Nodes** | `create` (FRAME, RECTANGLE, ELLIPSE, LINE, TEXT, SVG, VECTOR, IMAGE) · `modify` · `delete` (single or `ids: []`) · `query` · `append` · `clone` · `group` / `ungroup` · `flatten` · `resize` · `batch` (up to 50 ops) |
+| **Pages & view** | `status` · `listPages` · `setPage` · `createPage` · `set_selection` · `set_viewport` |
+| **Components** | `listComponents` · `createComponent` · `instantiate` (with per-layer `overrides`) · `setComponentProperties` · `swapComponent` · `addComponentProperty` · `bindComponentProperty` · `unbindComponentProperty` · `removeComponentProperty` |
+| **Tokens & styles** | `setupDesignTokens` (colors, numbers, fonts, text styles, modes in one idempotent call) · variable collections / modes / values · `applyVariable` · `applyTextStyle` · `setFrameVariableMode` · `createPaintStyle` · `createTextStyle` |
+| **Images & icons** | `loadImage(url)` · `loadIcon(name)` · `loadIconIn(name)` — server-side, with a 7-library icon fallback (Ionicons → Fluent → Bootstrap → Phosphor → Tabler → Lucide) |
+| **Prototyping** | `setReactions` / `removeReactions` (click, hover, press → navigate, overlay, swap; Smart Animate and more) · `setScrollBehavior` |
 
-Ask Claude: *"Read my selected frame and convert it to Tailwind CSS"*
+<details>
+<summary><strong>Styling properties on <code>create</code> / <code>modify</code></strong></summary>
 
-Claude calls `figma_read` with `operation: "get_selection"`, receives the full node tree,
-then generates corresponding code.
+| Property | Example |
+|---|---|
+| Solid fill | `"#6C5CE7"`, `"#6C5CE780"` (8-digit hex) or `"rgba(108,92,231,0.5)"` |
+| Gradient | `{ type: "LINEAR_GRADIENT", angle: 135, stops: [{ pos: 0, color: "#7C3AED" }, { pos: 1, color: "#EC4899" }] }` (also `RADIAL_GRADIENT`) |
+| Corners | `cornerRadius: 12` or `topLeftRadius` / `topRightRadius` / `bottomLeftRadius` / `bottomRightRadius` |
+| Effects | `[{ type: "DROP_SHADOW", color: "#00000026", offset: {x:0,y:8}, radius: 24 }]` — also `INNER_SHADOW`, `LAYER_BLUR`, `BACKGROUND_BLUR` |
+| Vector path | `d: "M 150 7 A 143 143 0 1 1 29.26 226.62"` — SVG arcs are converted to Béziers |
+| Insert position | `insertIndex: 2` places the node at an exact index in its parent |
 
-### Screenshot a frame
+`applyVariable` binds FLOAT, COLOR, STRING and BOOLEAN variables to fills, strokes, geometry, corner radii, auto-layout spacing, typography, font family/style, text content and visibility.
+</details>
 
+### `figma_read` — 19 operations
+
+| Operation | Returns |
+|---|---|
+| `get_selection` · `get_design` · `get_page_nodes` | Node trees for the selection, a frame/page, or the top-level frames |
+| `get_design_context` | AI-optimized payload: flex layout, token-resolved fills as `var(--name)`, typography with style names, component instances |
+| `get_component_map` · `get_unmapped_components` | Every instance with set name, variant label and suggested import path; instances with no code mapping yet |
+| `get_node_detail` | One node's properties with variables and styles **resolved to names and values**, plus a full list of instance overrides |
+| `get_css` | A ready-to-use CSS string for a node |
+| `screenshot` · `export_image` · `export_svg` | Inline PNG, base64 PNG/JPG (`format`, `scale`), or SVG markup |
+| `get_styles` · `get_variables` · `get_local_components` · `get_viewport` | Local styles, design tokens (all modes), components, viewport |
+| `getReactions` · `getComponentProperties` | Prototype interactions of a node; variant, boolean, text and instance-swap properties of a component or instance |
+| `search_nodes` · `scan_design` | Find nodes by type, name, color, font, size; progressive scan of large files |
+
+Hidden layers are skipped by default; pass `includeHidden: true` to `get_selection`, `get_design`, `search_nodes` or `scan_design` to include them.
+
+<details>
+<summary><strong>Working with an existing design system</strong></summary>
+
+Read before you draw, then bind to what exists:
+
+```js
+const vars = await figma.get_variables();
+const varMap = {};
+vars.collections.forEach(c => c.variables.forEach(v => { varMap[v.name] = v.id; }));
+
+const card = await figma.create({
+  type: "FRAME", name: "Card", width: 360, height: 200,
+  layoutMode: "VERTICAL", paddingTop: 16, paddingLeft: 16, paddingBottom: 16, paddingRight: 16, itemSpacing: 12,
+});
+await figma.applyVariable({ nodeId: card.id, field: "fill", variableId: varMap["bg-surface"] });
+await figma.applyVariable({ nodeId: card.id, field: "cornerRadius", variableId: varMap["radius-md"] });
 ```
-figma_read  →  operation: "screenshot"  →  nodeId: "123:456"
-```
 
-Returns a base64 PNG Claude can analyze and describe.
+Prefer `figma.instantiate({ componentId, parentId, overrides })` over redrawing existing components, and pin frames to a mode with `setFrameVariableMode` to preview Light and Dark side by side. The complete reference is one `figma_docs` call away.
+</details>
 
 ---
 
-## Architecture
+## Security model
 
-```
-figma-bridge-mcp/
-├── server/
-│   ├── index.js            MCP server (stdio transport)
-│   ├── bridge-server.js    HTTP bridge on localhost:38451 (long-poll, multi-session)
-│   ├── code-executor.js    VM sandbox — safe JS execution + 7-lib icon fetcher
-│   ├── tool-definitions.js MCP tool schemas (figma_status / _write / _read / _docs)
-│   └── api-docs.js         API reference text (served to AI via figma_docs)
-├── src/plugin/             Plugin source (concat-built into plugin/code.js)
-│   ├── utils.js, svg-path-helpers.js, paint-and-effects.js, read-helpers.js
-│   ├── handlers-write.js, handlers-read.js, handlers-read-detail.js,
-│   │   handlers-library.js, handlers-tokens.js, handlers-write-ops.js
-│   └── main.js
-└── plugin/
-    ├── manifest.json       Figma plugin manifest
-    ├── code.js             Plugin main (auto-generated — 3600+ LOC)
-    └── ui.html             Plugin UI — long-poll client + status dot
-```
+The bridge has no login, so access is controlled at the network edge, and `figma_write` code is treated as having your user's trust level.
 
-### Security
+```mermaid
+flowchart LR
+  R["HTTP request"] --> O{"Origin missing<br/>or 'null'?"}
+  O -->|no| X1["403 — web page"]
+  O -->|yes| H{"Host is<br/>loopback?"}
+  H -->|no| X2["403 — DNS rebinding"]
+  H -->|yes| A{"Operation on<br/>the allowlist?"}
+  A -->|no| X3["400"]
+  A -->|yes| Q["Queued for the plugin"]
+```
 
 | Layer | Protection |
-|-------|-----------|
-| VM sandbox | `vm.runInContext()` — blocks `require`, `process`, `fs`, `fetch` |
-| Localhost only | Bridge binds `localhost:38451`, never exposed to network |
-| Operation allowlist | 56 predefined operations accepted (WRITE_OPS + READ_OPS) |
-| Timeout | 30s VM execution + 60-90s per plugin operation (adaptive by op type) |
-| Body size limit | 5 MB max per request |
-| Session isolation | Multi-instance sessions scoped by Figma file ID |
+|---|---|
+| Network | Binds `127.0.0.1` only. Requests carrying a web-page `Origin` or a non-loopback `Host` get `403`, so a site you have open cannot drive the bridge. |
+| Allowlist | Only the 66 named operations are accepted, on the MCP path and on `/exec`. |
+| Sandbox | `figma_write` runs in a Node `vm` context that receives **no host objects** — only strings cross the boundary — and has no `require`, `process`, `fs` or `fetch`. It is hardened against the known constructor escape, but `vm` is not a process boundary: do not run code you do not trust. |
+| Outbound fetch | `loadImage` / `loadIcon` fetch only public `http(s)` URLs; private, loopback and link-local targets are blocked, including after redirects. |
+| Sessions | A pinned `sessionId` that is not connected is an error, never a silent fallback to another file. |
+| Limits | 5 MB request body · 30 s sandbox execution · 60–90 s per plugin operation. |
+
+Found a vulnerability? See [SECURITY.md](SECURITY.md).
 
 ---
 
-## Available Write Operations (`figma_write`)
+## Configuration
 
-### Core CRUD
-| Operation | Description |
-|-----------|-------------|
-| `figma.create({ type, ... })` | Create FRAME / RECTANGLE / ELLIPSE / LINE / TEXT / SVG / VECTOR / IMAGE |
-| `figma.modify({ id, ... })` | Update node properties (fill, size, text, layout, etc.) |
-| `figma.delete({ id })` | Remove a single node |
-| `figma.delete({ ids: [...] })` | **Batch delete** multiple nodes in one call |
-| `figma.query({ type?, name?, id? })` | Find nodes by type, name, or ID |
-| `figma.append({ parentId, childId })` | Move node into parent |
-
-**`create` / `modify` — advanced props available on any node:**
-
-| Prop | Example | Notes |
-|------|---------|-------|
-| `fill` (solid) | `"#6C5CE7"` or `"#6C5CE780"` (8-digit hex with alpha) or `"rgba(108,92,231,0.5)"` | Alpha auto-extracted into paint opacity |
-| `fill` (gradient) | `{ type: "LINEAR_GRADIENT", angle: 135, stops: [{ pos: 0, color: "#7C3AED" }, { pos: 1, color: "#EC4899" }] }` | Also `RADIAL_GRADIENT` |
-| `stroke`, `strokeWeight`, `strokeOpacity` | Same hex/rgba rules | |
-| `cornerRadius` uniform | `12` | All 4 corners |
-| Individual corners | `topLeftRadius: 20, topRightRadius: 20, bottomLeftRadius: 0, bottomRightRadius: 0` | Rounded top sheet pattern |
-| `effects` array | `[{ type: "DROP_SHADOW", color: "#00000026", offset: {x:0,y:8}, radius: 24, spread: 0 }]` | Types: `DROP_SHADOW`, `INNER_SHADOW`, `LAYER_BLUR`, `BACKGROUND_BLUR` |
-| TEXT center | `textAlign: "CENTER"` with explicit `width` | Auto-infers `textAutoResize: "NONE"` so centering works |
-| VECTOR path | `d: "M 150 7 A 143 143 0 1 1 29.26 226.62"` | SVG `A` arc auto-converted to cubic Bézier; commas accepted |
-
-### Page Management
-| Operation | Description |
-|-----------|-------------|
-| `figma.status()` | Current Figma context info |
-| `figma.listPages()` | List all pages |
-| `figma.setPage({ name })` | Switch active page |
-| `figma.createPage({ name })` | Add a new page |
-
-### Node Operations
-| Operation | Description |
-|-----------|-------------|
-| `figma.clone({ id, x?, y?, parentId? })` | Duplicate a node with optional repositioning |
-| `figma.group({ nodeIds, name? })` | Group multiple nodes |
-| `figma.ungroup({ id })` | Ungroup a GROUP/FRAME |
-| `figma.flatten({ id })` | Flatten/merge vectors into single path |
-| `figma.resize({ id, width, height })` | Resize any node |
-| `figma.set_selection({ ids })` | Programmatically select nodes |
-| `figma.set_viewport({ nodeId?, x?, y?, zoom? })` | Navigate viewport |
-| `figma.batch({ operations })` | Execute up to 50 ops in one call (10-25x faster) |
-
-### Components
-| Operation | Description |
-|-----------|-------------|
-| `figma.listComponents()` | List all components in document |
-| `figma.createComponent({ nodeId, name? })` | Convert FRAME/GROUP → reusable Component |
-| `figma.instantiate({ componentId/Name, parentId, x, y })` | Create component instance |
-| `figma.instantiate({ ..., overrides: { "LayerName": { text, fill, fontSize, visible, ... } } })` | Instantiate with per-layer overrides |
-
-### Design Tokens & Styles
-| Operation | Description |
-|-----------|-------------|
-| `figma.setupDesignTokens({ colors, numbers, fontSizes, fonts, textStyles, modes })` | Bootstrap complete token system (idempotent) — colors + spacing + typography + text styles + multi-mode in 1 call |
-| `figma.createVariableCollection({ name })` | Create variable collection ("Colors", "Spacing") |
-| `figma.createVariable({ name, collectionId, resolvedType, value })` | Create COLOR/FLOAT/STRING/BOOLEAN variable |
-| `figma.addVariableMode({ collectionId, modeName })` | Add mode (e.g. "dark", "compact") |
-| `figma.renameVariableMode({ collectionId, modeId, newName })` | Rename a mode |
-| `figma.removeVariableMode({ collectionId, modeId })` | Remove a mode |
-| `figma.setVariableValue({ variableId/Name, modeId/Name, value })` | Set per-mode value |
-| `figma.modifyVariable({ variableName, value })` | Change variable value — all bound nodes update |
-| `figma.applyVariable({ nodeId, field, variableId/Name })` | Bind variable to a node property |
-| `figma.applyTextStyle({ nodeId, styleName })` | Apply a local text style to a TEXT node by name (auto-loads font) |
-| `figma.setFrameVariableMode({ nodeId, collectionId, modeName })` | Pin frame to a variable mode (Light/Dark, Compact/Large) |
-| `figma.clearFrameVariableMode({ nodeId, collectionId })` | Reset frame to document default mode |
-| `figma.createPaintStyle({ name, color })` | Create reusable paint style |
-| `figma.createTextStyle({ name, fontFamily, fontSize, ... })` | Create reusable text style (manual — prefer `setupDesignTokens.textStyles`) |
-| `figma.ensure_library()` | Create/get Design Library frame |
-| `figma.get_library_tokens()` | Read library color + text tokens |
-
-**`applyVariable` supported fields** — bind FLOAT/COLOR/STRING/BOOLEAN variables to:
-- **Color**: `fill`, `stroke`
-- **Geometry**: `opacity`, `width`, `height`, `strokeWeight`
-- **Corner radius**: `cornerRadius` + individual `topLeftRadius` / `topRightRadius` / `bottomLeftRadius` / `bottomRightRadius`
-- **Spacing** (auto-layout): `paddingTop`, `paddingBottom`, `paddingLeft`, `paddingRight`, `itemSpacing`, `counterAxisSpacing`
-- **Typography** (TEXT nodes): `fontSize`, `letterSpacing`, `lineHeight`, `paragraphSpacing`, `paragraphIndent`
-- **Font swap (STRING)**: `fontFamily`, `fontStyle`, `characters` — swap Inter → SF Pro via 1 variable
-- **Visibility (BOOLEAN)**: `visible`
-
-### Image & Icon Helpers (server-side)
-| Operation | Description |
-|-----------|-------------|
-| `figma.loadImage(url, opts)` | Download image → place on canvas |
-| `figma.loadIcon(name, opts)` | Fetch SVG icon with 7-library fallback (iOS-filled first) |
-| `figma.loadIconIn(name, opts)` | Icon inside centered circle background |
-
-**`loadIcon` fallback priority** (filled-first, iOS style preferred):
-**Ionicons** (iOS filled) → **Fluent UI** (Win11 filled) → **Bootstrap** (filled) → **Phosphor** (filled) → **Tabler Filled** (4,500+) → **Tabler Outline** → **Lucide** (outline fallback)
-
-Free replacement for paid Icons8 ios-filled. Ionicons naming quirks: Bell→`notifications`, Back→`chevron-back`, Clock→`time`, Fire→`flame`, Lightning→`flash`, Lock→`lock-closed`.
-
-### Prototyping & Interactions
-| Operation | Description |
-|-----------|-------------|
-| `figma.setReactions({ id, reactions })` | Add prototype interactions (ON_CLICK/ON_HOVER/ON_PRESS → NAVIGATE/OVERLAY/SWAP) |
-| `figma.getReactions({ id })` | Read all prototype interactions from a node |
-| `figma.removeReactions({ id })` | Clear all interactions from a node |
-
-Supported transitions: `SMART_ANIMATE`, `DISSOLVE`, `MOVE_IN`, `MOVE_OUT`, `PUSH`, `SLIDE_IN`, `SLIDE_OUT`, `INSTANT`
-Supported easings: `LINEAR`, `EASE_IN`, `EASE_OUT`, `EASE_IN_AND_OUT`, `CUSTOM_BEZIER`
-
-### Scroll Behavior
-| Operation | Description |
-|-----------|-------------|
-| `figma.setScrollBehavior({ id, overflowDirection })` | Set overflow scrolling: `NONE` / `HORIZONTAL` / `VERTICAL` / `BOTH` |
-
-### Variant & Component Swapping
-| Operation | Description |
-|-----------|-------------|
-| `figma.setComponentProperties({ id, properties })` | Set variant, boolean, text, or instance swap properties on an INSTANCE |
-| `figma.swapComponent({ id, componentId })` | Swap the main component of an instance |
-| `figma.getComponentProperties({ id })` | Read all properties + definitions from component/instance |
-
-## Available Read Operations (`figma_read`)
-
-| Operation | Description |
-|-----------|-------------|
-| `get_selection` | Full design tree of selected node(s) + design tokens |
-| `get_design` | Full node tree for a frame/page (depth param: default 10, or "full") |
-| `get_page_nodes` | Top-level frames on the current page |
-| `screenshot` | Export node as PNG — displays **inline** in Claude Code |
-| `export_svg` | Export node as SVG markup |
-| `export_image` | Export node as base64 PNG/JPG — for saving to disk (`format`, `scale` params) |
-| `get_design_context` | **AI-optimized design→code payload** — flex layout, token-resolved fills as `var(--name)`, typography with style names, component instances with variant properties + `componentsUsed` / `tokensUsed` summaries. Best single call for generating React/Vue/Swift code. |
-| `get_component_map` | **Component instance map** — every INSTANCE in a frame with `componentSetName`, `variantLabel`, `properties`, and `suggestedImport` path. Deduplicates into `uniqueComponents[]` with usage counts. |
-| `get_unmapped_components` | **Code-mapping audit** — lists instances with no description in Figma (`unmapped[]`). Use to prompt user for correct import paths before code generation. |
-| `get_node_detail` | Structured properties for single node — fills, layout, typography, effects, bound variables **(resolved to name+value)**, style refs **(resolved to name+hex)**, instance overrides **(full field list)**, `componentSetName` + `variantLabel` |
-| `get_css` | **Ready-to-use CSS string** for a node — background, flex, border, radius, shadow, typography, opacity, transform. Best for design-to-code. |
-| `get_styles` | All local paint, text, effect, grid styles |
-| `get_local_components` | Component listing with descriptions + variant properties |
-| `get_viewport` | Current viewport position, zoom, bounds |
-| `get_variables` | Local variables (Design Tokens) — collections, modes, values |
-| `search_nodes` | Find nodes by type, name, fill color, font, size — supports `includeHidden` |
-| `scan_design` | Progressive scan for large files — all text, colors, fonts, images, icons |
-
-**`includeHidden` param** (boolean, default `false`) — available on `get_selection`, `get_design`, `search_nodes`, `scan_design`. When `false` (default), nodes with `visible: false` are skipped. Pass `true` to include hidden layers.
+| Variable | Default | Purpose |
+|---|---|---|
+| `FIGMA_MCP_PORT` | `38451` | Bridge port. If taken, the next 9 ports are tried. |
+| `FIGMA_MCP_HOST` | `127.0.0.1` | Bind address. Changing it exposes an unauthenticated bridge — avoid. |
+| `FIGMA_MCP_LONG_POLL_MS` | `8000` | How long an idle poll is held open. |
+| `FIGMA_MCP_ALLOW_PRIVATE_FETCH` | unset | Set to `1` to let `loadImage` reach private/loopback hosts (e.g. a local asset server). |
 
 ---
 
-## Working with an Existing Project
+## Troubleshooting
 
-When opening a Figma file that already has a design system, **always read before drawing**.
-
-### Step 1 — Read what exists
-
-```
-figma_read get_variables      → load variable IDs (Design Tokens)
-figma_read get_styles         → load paint/text style IDs and hex values
-figma_read get_local_components → load component IDs
-figma_read get_page_nodes     → load top-level frame IDs
-```
-
-### Step 2 — Build lookup maps in figma_write
-
-```js
-// Load variables → build varMap: name → id
-var vars = await figma.get_variables();
-var varMap = {};
-for (var ci = 0; ci < vars.collections.length; ci++) {
-  var col = vars.collections[ci];
-  for (var vi = 0; vi < col.variables.length; vi++) {
-    var v = col.variables[vi];
-    varMap[v.name] = v.id;
-  }
-}
-
-// Load styles → build colorMap: name → hex, textMap: name → {fontSize, fontWeight}
-var styles = await figma.get_styles();
-var colorMap = {}, textMap = {};
-styles.paintStyles.forEach(function(s) { colorMap[s.name] = s.hex; });
-styles.textStyles.forEach(function(s)  { textMap[s.name]  = s; });
-
-// Load components → build compMap: name → id
-var comps = await figma.get_local_components();
-var compMap = {};
-comps.components.forEach(function(c) { compMap[c.name] = c.id; });
-```
-
-### Step 3 — Create nodes using discovered values
-
-```js
-// Use colorMap for fill (hex from existing styles)
-var card = await figma.create({
-  type: "FRAME", name: "Card",
-  fill: colorMap["color/bg-surface"] || "#FFFFFF",
-  width: 360, height: 200,
-  layoutMode: "VERTICAL", paddingTop: 16, paddingLeft: 16,
-  paddingBottom: 16, paddingRight: 16, itemSpacing: 12,
-});
-
-// Then bind variables so light/dark mode switches propagate
-if (varMap["bg-surface"])
-  await figma.applyVariable({ nodeId: card.id, field: "fill",        variableId: varMap["bg-surface"] });
-if (varMap["radius-md"])
-  await figma.applyVariable({ nodeId: card.id, field: "cornerRadius",variableId: varMap["radius-md"] });
-if (varMap["spacing-md"])
-  await figma.applyVariable({ nodeId: card.id, field: "paddingTop",  variableId: varMap["spacing-md"] });
-```
-
-### Step 4 — Instantiate components with overrides
-
-```js
-// Prefer existing components over drawing from scratch
-if (compMap["btn/primary"]) {
-  await figma.instantiate({
-    componentId: compMap["btn/primary"],
-    parentId: card.id,
-    overrides: { "Label": { text: "Confirm", fill: "#FFFFFF" } }
-  });
-}
-```
-
-### Step 5 — Pin frames to Light / Dark mode
-
-```js
-var collection = vars.collections.find(function(c) { return c.name === "Design Tokens"; });
-
-// Duplicate frame and preview both modes side by side
-var frames = await figma.get_page_nodes();
-var homeId  = frames.find(function(f) { return f.name === "Home"; }).id;
-var light   = await figma.clone({ id: homeId, x: 0,    name: "Preview/Light" });
-var dark    = await figma.clone({ id: homeId, x: 1540, name: "Preview/Dark"  });
-await figma.setFrameVariableMode({ nodeId: light.id, collectionId: collection.id, modeName: "light" });
-await figma.setFrameVariableMode({ nodeId: dark.id,  collectionId: collection.id, modeName: "dark"  });
-```
-
-> Full API reference and all design rules: run `figma_docs` in your AI client.
+| Symptom | Fix |
+|---|---|
+| `Plugin not connected` | Run the plugin in **Figma Desktop** (*Plugins → Development → Bridge MCP for Figma*). The web app cannot reach `localhost`. |
+| Tools missing in the AI client | Restart the client fully after editing its MCP config. |
+| Green dot never appears | Check nothing else holds port `38451`, or set `FIGMA_MCP_PORT` and re-import the plugin. |
+| Plugin and server versions differ | Re-import `manifest.json` after upgrading; the plugin does not auto-update. |
+| `Session "…" is not connected` | The targeted Figma file is closed or its plugin stopped. Open it, or omit `sessionId` to use the active file. |
+| `variable is not defined` in `figma_write` | Each call is isolated. Re-query node IDs at the start of every call. |
+| `Icon "…" not found` | Use Ionicons names in kebab-case (`notifications`, `chevron-back`, `lock-closed`). |
 
 ---
 
-## Star History
+## Project layout
 
-If **figma-bridge-mcp** helps you, please give it a star — it helps others discover the project!
+```text
+figma-bridge-mcp/
+├── server/                 npm package: MCP server + bridge
+│   ├── index.js            MCP entry (stdio) and tool handlers
+│   ├── bridge-server.js    HTTP bridge: long-poll, sessions, origin gate
+│   ├── code-executor.js    sandbox for figma_write
+│   ├── figma-proxy.js      the figma.* API seen by user code
+│   ├── http-fetch.js       guarded fetch for images and icons
+│   ├── allowed-ops.js      operation allowlist
+│   └── docs/               reference served by figma_docs
+├── src/plugin/             plugin source (plain files, concatenated)
+├── plugin/                 manifest.json, ui.html, code.js (generated)
+└── scripts/                build, test runner, regression tests
+```
 
-[![GitHub stars](https://img.shields.io/github/stars/nguyendinhphongdx/figma-bridge-mcp?style=social)](https://github.com/nguyendinhphongdx/figma-bridge-mcp/stargazers)
+## Development
 
-[![Star History Chart](https://api.star-history.com/svg?repos=nguyendinhphongdx/figma-bridge-mcp&type=Date)](https://star-history.com/#nguyendinhphongdx/figma-bridge-mcp&Date)
+```bash
+npm install
+npm run build:plugin    # src/plugin/*.js  →  plugin/code.js  (generated — never edit by hand)
+npm test                # every scripts/test-*.mjs; no live Figma needed
+```
+
+Plugin files share one scope when concatenated; their order lives in `scripts/lib/plugin-files.mjs`. See [CLAUDE.md](CLAUDE.md) for the invariants worth knowing before you change anything.
+
+**Releasing:** bump `version` in `package.json`, rename the top `CHANGELOG.md` heading to `## [x.y.z] — date`, push to `main`. CI runs the tests, publishes to npm, tags the commit, creates a GitHub Release with the plugin zip attached, and updates the MCP Registry.
 
 ---
 
 ## License
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-
-MIT © [nguyendinhphongdx](https://github.com/nguyendinhphongdx), forked from [TranHoaiHung/figma-ui-mcp](https://github.com/TranHoaiHung/figma-ui-mcp) — free to use, modify, and distribute. See [LICENSE](LICENSE) for details.
-
----
-
-## Keywords
-
-figma mcp, claude code to figma, cursor to figma, ai to figma, figma ai plugin, figma mcp bridge, figma mcp server, figma design to code, code to figma design, ai ui design, figma automation, figma plugin ai, model context protocol figma, claude figma, windsurf figma, vs code figma, antigravity figma, ai design tool, figma api alternative, figma localhost plugin, draw ui with ai, ai generate figma design, figma design system ai, mcp server figma, figma read design, figma write design, bidirectional figma, figma desktop plugin, npx @hanoilab/figma-bridge-mcp
+[MIT](LICENSE) © [nguyendinhphongdx](https://github.com/nguyendinhphongdx). Forked from [TranHoaiHung/figma-ui-mcp](https://github.com/TranHoaiHung/figma-ui-mcp); the original copyright notice is preserved in [LICENSE](LICENSE).

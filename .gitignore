@@ -3,9 +3,9 @@ node_modules/
 *.log
 .DS_Store
 .claude/*
+!.claude/settings.json
 .mcpregistry_*
 docs/*
-CLAUDE.md
 DEVELOPER.md
 plans/*
 feedback.md

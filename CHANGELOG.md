@@ -1,7 +1,7 @@
 # Changelog
 
 
-## Unreleased — fork rebrand and security hardening
+## [2.6.0] — 2026-11-10 — fork rebrand and security hardening
 
 - **Rebrand**: renamed to `figma-bridge-mcp` (npm: `@hanoilab/figma-bridge-mcp`, plugin: "Bridge MCP for Figma"). Forked from TranHoaiHung/figma-ui-mcp (MIT).
 - **Security — sandbox**: `figma_write` code could escape `node:vm` through `Object.constructor(...)` or `figma.notify.constructor(...)` and run arbitrary code on the host. The context now gets its own builtins and a string-only bridge, so no host-realm object or error reaches user code.
